@@ -100,9 +100,9 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
   return (
     <nav className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-3 items-center h-16">
+        <div className="flex items-center justify-between h-16">
           {/* Left side - Logo */}
-          <div className="flex justify-start">
+          <div className="flex items-center">
             <Link href="/" className="flex items-center">
               <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Play className="h-5 w-5 text-white" />
@@ -114,7 +114,7 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
           </div>
 
           {/* Center - Desktop Navigation */}
-          <div className="hidden md:flex justify-center">
+          <div className="hidden md:flex items-center">
             <div className="flex items-baseline space-x-4">
               {navigationLinks.map((link) => (
                 <Link
@@ -129,7 +129,7 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
           </div>
 
           {/* Right side - Desktop */}
-          <div className="hidden md:flex items-center justify-end space-x-3">
+          <div className="hidden md:flex items-center space-x-3">
             <ThemeToggle />
             
             {isLoading ? (
@@ -217,10 +217,8 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center justify-end space-x-3">
-            <div className="flex items-center">
-              <ThemeToggle />
-            </div>
+          <div className="md:hidden flex items-center space-x-3">
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="sm"
