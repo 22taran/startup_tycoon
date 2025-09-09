@@ -10,7 +10,7 @@ import { Course } from '@/types'
 
 interface CourseCatalogProps {
   currentUserEmail: string
-  userRole?: 'admin' | 'student'
+  userRole?: 'admin' | 'student' | 'instructor'
 }
 
 interface CourseWithEnrollment extends Course {

@@ -118,7 +118,7 @@ export async function PUT(
     // Check if user is the instructor of this course
     const { data: course, error: fetchError } = await supabase
       .from('courses')
-      .select('instructor_id')
+      .select('instructor_id, code')
       .eq('id', courseId)
       .single();
 

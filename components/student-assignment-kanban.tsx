@@ -207,13 +207,13 @@ export function StudentAssignmentKanban({
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-500">Start</span>
               <span className="font-medium">
-                {formatDate(assignment.startDate)}
+                {formatDate(assignment.startDate.toString())}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-500">Due</span>
               <span className="font-medium">
-                {formatDate(assignment.dueDate)}
+                {formatDate(assignment.dueDate.toString())}
               </span>
             </div>
             {assignment.evaluationStartDate && assignment.evaluationDueDate && (
@@ -221,13 +221,13 @@ export function StudentAssignmentKanban({
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500">Eval Start</span>
                   <span className="font-medium">
-                    {formatDate(assignment.evaluationStartDate)}
+                    {formatDate(assignment.evaluationStartDate.toString())}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500">Eval Due</span>
                   <span className="font-medium">
-                    {formatDate(assignment.evaluationDueDate)}
+                    {formatDate(assignment.evaluationDueDate.toString())}
                   </span>
                 </div>
               </>

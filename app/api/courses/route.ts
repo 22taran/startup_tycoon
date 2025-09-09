@@ -52,14 +52,14 @@ export async function GET(request: NextRequest) {
     if (role === 'instructor') {
       // Get courses where user is the instructor
       const { data, error: instructorError } = await query.eq('instructor_id', session.user.id);
-      courses = data;
+      courses = data || [];
       error = instructorError;
     } else if (role === 'student') {
       // Get courses where user is enrolled as a student
       const { data, error: studentError } = await query.eq('enrollments.user_id', session.user.id)
         .eq('enrollments.role', 'student')
         .eq('enrollments.status', 'active');
-      courses = data;
+      courses = data || [];
       error = studentError;
     } else {
       // Get all courses the user has access to (instructor or enrolled)
