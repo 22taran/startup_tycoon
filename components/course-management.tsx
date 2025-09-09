@@ -316,7 +316,7 @@ export function CourseManagement({ currentUserEmail }: CourseManagementProps) {
                   
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                     <Calendar className="h-4 w-4 mr-2" />
-                    <span>Created: {formatDate(course.createdAt.toString())}</span>
+                    <span>Created: {course.createdAt ? formatDate(course.createdAt.toString()) : 'Unknown'}</span>
                   </div>
                 </div>
                 
