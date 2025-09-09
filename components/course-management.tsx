@@ -60,7 +60,8 @@ export function CourseManagement({ currentUserEmail }: CourseManagementProps) {
     description: '',
     code: '',
     semester: '',
-    year: new Date().getFullYear()
+    year: new Date().getFullYear(),
+    instructorName: ''
   })
 
   useEffect(() => {
@@ -102,13 +103,14 @@ export function CourseManagement({ currentUserEmail }: CourseManagementProps) {
 
       const data = await response.json()
       if (data.success) {
-        setCourseForm({
-          name: '',
-          description: '',
-          code: '',
-          semester: '',
-          year: new Date().getFullYear()
-        })
+      setCourseForm({
+        name: '',
+        description: '',
+        code: '',
+        semester: '',
+        year: new Date().getFullYear(),
+        instructorName: ''
+      })
         setIsCreateModalOpen(false)
         fetchCourses()
       } else {
@@ -218,6 +220,16 @@ export function CourseManagement({ currentUserEmail }: CourseManagementProps) {
                   value={courseForm.code}
                   onChange={(e) => setCourseForm({ ...courseForm, code: e.target.value })}
                   placeholder="e.g., CS101"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="instructorName">Instructor Name</Label>
+                <Input
+                  id="instructorName"
+                  value={courseForm.instructorName}
+                  onChange={(e) => setCourseForm({ ...courseForm, instructorName: e.target.value })}
+                  placeholder="e.g., Dr. John Smith"
                   required
                 />
               </div>

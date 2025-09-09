@@ -16,6 +16,7 @@ const createCourseSchema = z.object({
   code: z.string().min(1, 'Course code is required').max(20, 'Course code must be 20 characters or less'),
   semester: z.string().min(1, 'Semester is required'),
   year: z.number().int().min(2020).max(2030),
+  instructorName: z.string().min(1, 'Instructor name is required'),
 });
 
 // GET /api/courses - Get courses for the authenticated user
@@ -51,12 +52,38 @@ export async function GET(request: NextRequest) {
 
     if (role === 'instructor') {
       // Get courses where user is the instructor
-      const { data, error: instructorError } = await query.eq('instructor_id', session.user.id);
+      const { data, error: instructorError } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          instructor:users!courses_instructor_id_fkey(name, email),
+          enrollments:course_enrollments(
+            user_id,
+            role,
+            status,
+            user:users(name, email)
+          )
+        `)
+        .eq('is_active', true)
+        .eq('instructor_id', session.user.id);
       courses = data || [];
       error = instructorError;
     } else if (role === 'student') {
       // Get courses where user is enrolled as a student
-      const { data, error: studentError } = await query.eq('enrollments.user_id', session.user.id)
+      const { data, error: studentError } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          instructor:users!courses_instructor_id_fkey(name, email),
+          enrollments:course_enrollments(
+            user_id,
+            role,
+            status,
+            user:users(name, email)
+          )
+        `)
+        .eq('is_active', true)
+        .eq('enrollments.user_id', session.user.id)
         .eq('enrollments.role', 'student')
         .eq('enrollments.status', 'active');
       courses = data || [];
@@ -163,7 +190,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, description, code, semester, year } = validation.data;
+    const { name, description, code, semester, year, instructorName } = validation.data;
 
     // Check if course code already exists
     const { data: existingCourse } = await supabase
@@ -190,6 +217,7 @@ export async function POST(request: NextRequest) {
         semester,
         year,
         instructor_id: session.user.id,
+        instructor_name: instructorName,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

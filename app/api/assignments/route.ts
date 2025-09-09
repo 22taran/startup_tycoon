@@ -4,12 +4,16 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth.config'
 import { Assignment } from '@/types'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Update assignment statuses before fetching
     await updateAssignmentStatus()
     
-    const assignments = await getAssignments()
+    // Get courseId from query parameters
+    const { searchParams } = new URL(request.url)
+    const courseId = searchParams.get('courseId')
+    
+    const assignments = await getAssignments(courseId)
     return NextResponse.json({ success: true, data: assignments })
   } catch (error) {
     console.error('Error fetching assignments:', error)
@@ -35,11 +39,11 @@ export async function POST(request: NextRequest) {
     const user = session.user
 
     const body = await request.json()
-    const { title, description, startDate, dueDate, documentUrl } = body
+    const { title, description, startDate, dueDate, documentUrl, courseId } = body
 
-    if (!title || !dueDate || !startDate) {
+    if (!title || !dueDate || !startDate || !courseId) {
       return NextResponse.json(
-        { success: false, error: 'Title, start date, and due date are required' },
+        { success: false, error: 'Title, start date, due date, and course ID are required' },
         { status: 400 }
       )
     }
@@ -56,7 +60,8 @@ export async function POST(request: NextRequest) {
       startDate: new Date(startDate),
       dueDate: new Date(dueDate),
       documentUrl: documentUrl || null,
-      isActive: isActive
+      isActive: isActive,
+      courseId: courseId
     } as any)
 
     return NextResponse.json({ success: true, data: newAssignment })

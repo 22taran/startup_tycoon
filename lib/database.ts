@@ -284,6 +284,7 @@ export const createAssignment = async (assignmentData: Omit<Assignment, 'id' | '
     evaluation_start_date: assignmentData.evaluationStartDate,
     evaluation_due_date: assignmentData.evaluationDueDate,
     is_evaluation_active: assignmentData.isEvaluationActive || false,
+    course_id: assignmentData.courseId,
     created_by: (assignmentData as any).created_by
   }
   
@@ -308,17 +309,26 @@ export const createAssignment = async (assignmentData: Omit<Assignment, 'id' | '
     evaluationStartDate: data.evaluation_start_date ? new Date(data.evaluation_start_date) : undefined,
     evaluationDueDate: data.evaluation_due_date ? new Date(data.evaluation_due_date) : undefined,
     isEvaluationActive: data.is_evaluation_active || false,
+    courseId: data.course_id,
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at)
   }
 }
 
-export const getAssignments = async () => {
+export const getAssignments = async (courseId?: string | null) => {
   const supabase = getSimpleSupabaseClient()
-  const { data, error } = await supabase
+  
+  let query = supabase
     .from('assignments')
     .select('*')
     .order('created_at', { ascending: false })
+  
+  // Filter by courseId if provided
+  if (courseId) {
+    query = query.eq('course_id', courseId)
+  }
+  
+  const { data, error } = await query
   
   if (error) throw error
   
@@ -335,7 +345,8 @@ export const getAssignments = async () => {
     evaluationDueDate: assignment.evaluation_due_date ? new Date(assignment.evaluation_due_date) : undefined,
     isEvaluationActive: assignment.is_evaluation_active || false,
     createdAt: new Date(assignment.created_at),
-    updatedAt: new Date(assignment.updated_at)
+    updatedAt: new Date(assignment.updated_at),
+    courseId: assignment.course_id
   }))
 }
 

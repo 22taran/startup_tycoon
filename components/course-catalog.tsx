@@ -183,7 +183,7 @@ export function CourseCatalog({ currentUserEmail, userRole = 'student' }: Course
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                     <Users className="h-4 w-4 mr-2" />
-                    <span>Instructor: {course.instructor.name}</span>
+                    <span>Instructor: {course.instructor?.name || course.instructorName || 'Unknown'}</span>
                   </div>
                   
                   {course.enrollment && (

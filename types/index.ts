@@ -19,6 +19,7 @@ export interface Course {
   semester: string // e.g., "Fall 2024", "Spring 2025"
   year: number
   instructorId: string
+  instructorName: string
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -316,6 +317,7 @@ export interface CourseRow {
   semester: string
   year: number
   instructor_id: string
+  instructor_name: string
   is_active: boolean
   created_at: string
   updated_at: string
@@ -364,6 +366,7 @@ export interface CourseForm {
   code: string
   semester: string
   year: number
+  instructorName: string
 }
 
 export interface EnrollmentForm {

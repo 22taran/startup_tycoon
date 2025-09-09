@@ -747,6 +747,7 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
         open={showCreateAssignmentModal}
         onOpenChange={setShowCreateAssignmentModal}
         onAssignmentAdded={fetchCourseData}
+        courseId={courseId}
       />
 
       {/* Edit Assignment Modal */}

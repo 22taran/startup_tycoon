@@ -38,7 +38,8 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
     code: '',
     description: '',
     semester: '',
-    year: new Date().getFullYear()
+    year: new Date().getFullYear(),
+    instructorName: ''
   })
   const [stats, setStats] = useState({
     totalCourses: 0,
@@ -99,17 +100,18 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
           instructorId: currentUserEmail
         }),
       })
-
+      
       const data = await response.json()
       if (data.success) {
         setShowCreateCourseModal(false)
-        setCourseForm({
-          name: '',
-          code: '',
-          description: '',
-          semester: '',
-          year: new Date().getFullYear()
-        })
+      setCourseForm({
+        name: '',
+        code: '',
+        description: '',
+        semester: '',
+        year: new Date().getFullYear(),
+        instructorName: ''
+      })
         // Refresh the stats to show the new course
         fetchDashboardStats()
       }
@@ -121,7 +123,7 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
   const renderContent = () => {
     switch (currentTab) {
       case 'courses':
-        return (
+    return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -134,8 +136,8 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
               </Button>
             </div>
             <CourseManagement currentUserEmail={currentUserEmail} />
-          </div>
-        )
+      </div>
+    )
 
       case 'users':
   return (
@@ -340,8 +342,8 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
                   <p className="text-xs text-muted-foreground">
                     Platform users
                   </p>
-                </CardContent>
-              </Card>
+            </CardContent>
+          </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -356,19 +358,19 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+          <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">System Status</CardTitle>
                   <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
+            </CardHeader>
+            <CardContent>
                   <div className="text-2xl font-bold text-green-600">{stats.systemStatus}</div>
                   <p className="text-xs text-muted-foreground">
                     All systems operational
                   </p>
                 </CardContent>
               </Card>
-            </div>
+                  </div>
                 </div>
         )
     }
@@ -429,6 +431,16 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
                 value={courseForm.code}
                 onChange={(e) => setCourseForm({ ...courseForm, code: e.target.value })}
                 placeholder="e.g., CS101"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="instructorName">Instructor Name</Label>
+              <Input
+                id="instructorName"
+                value={courseForm.instructorName}
+                onChange={(e) => setCourseForm({ ...courseForm, instructorName: e.target.value })}
+                placeholder="e.g., Dr. John Smith"
                 required
               />
             </div>

@@ -19,9 +19,10 @@ interface AddAssignmentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAssignmentAdded: () => void
+  courseId?: string
 }
 
-export function AddAssignmentModal({ open, onOpenChange, onAssignmentAdded }: AddAssignmentModalProps) {
+export function AddAssignmentModal({ open, onOpenChange, onAssignmentAdded, courseId }: AddAssignmentModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -98,7 +99,8 @@ export function AddAssignmentModal({ open, onOpenChange, onAssignmentAdded }: Ad
           description: formData.description,
           startDate: formData.startDate,
           dueDate: formData.dueDate,
-          documentUrl: documentUrl
+          documentUrl: documentUrl,
+          courseId: courseId
         }),
       })
 
