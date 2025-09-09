@@ -364,13 +364,13 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
       {/* Main Content */}
       <Tabs defaultValue="pipeline" className="space-y-6">
         <div className="overflow-x-auto">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 min-w-max">
-            <TabsTrigger value="pipeline" className="text-xs sm:text-sm">Pipeline</TabsTrigger>
-            <TabsTrigger value="assignments" className="text-xs sm:text-sm">Assignments</TabsTrigger>
-            <TabsTrigger value="submissions" className="text-xs sm:text-sm">My Submissions</TabsTrigger>
-            <TabsTrigger value="pending-investments" className="text-xs sm:text-sm">Pending Investment</TabsTrigger>
-            <TabsTrigger value="investments" className="text-xs sm:text-sm">My Investments</TabsTrigger>
-            <TabsTrigger value="grades" className="text-xs sm:text-sm">Grades & Feedback</TabsTrigger>
+          <TabsList className="flex w-max min-w-full">
+            <TabsTrigger value="pipeline" className="text-xs sm:text-sm whitespace-nowrap">Pipeline</TabsTrigger>
+            <TabsTrigger value="assignments" className="text-xs sm:text-sm whitespace-nowrap">Assignments</TabsTrigger>
+            <TabsTrigger value="submissions" className="text-xs sm:text-sm whitespace-nowrap">My Submissions</TabsTrigger>
+            <TabsTrigger value="pending-investments" className="text-xs sm:text-sm whitespace-nowrap">Pending Investment</TabsTrigger>
+            <TabsTrigger value="investments" className="text-xs sm:text-sm whitespace-nowrap">My Investments</TabsTrigger>
+            <TabsTrigger value="grades" className="text-xs sm:text-sm whitespace-nowrap">Grades & Feedback</TabsTrigger>
           </TabsList>
         </div>
 

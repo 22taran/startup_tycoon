@@ -217,13 +217,15 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center justify-end space-x-2">
-            <ThemeToggle />
+          <div className="md:hidden flex items-center justify-end space-x-3">
+            <div className="flex items-center">
+              <ThemeToggle />
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleMobileMenu}
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-2"
             >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
