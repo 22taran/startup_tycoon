@@ -235,7 +235,7 @@ export function StudentAssignmentKanban({
           </div>
 
           {/* Student Status */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
             <div className="flex items-center space-x-1">
               <FileText className="h-3 w-3 text-gray-400" />
               <span>{stats.isSubmitted ? 'Submitted' : 'Not Submitted'}</span>
@@ -245,7 +245,7 @@ export function StudentAssignmentKanban({
               <span>{stats.hasInvested ? 'Invested' : 'Not Invested'}</span>
             </div>
             {stats.totalGrades > 0 && (
-              <div className="flex items-center space-x-1 col-span-2">
+              <div className="flex items-center space-x-1 col-span-1 sm:col-span-2">
                 <Trophy className="h-3 w-3 text-gray-400" />
                 <span>Grade: {stats.averageGrade.toFixed(0)}%</span>
               </div>
@@ -330,7 +330,7 @@ export function StudentAssignmentKanban({
     return (
       <div
         key={stage}
-        className={`flex-1 min-w-0 ${config.bgColor} rounded-lg border-2 border-dashed p-4`}
+        className={`w-80 flex-shrink-0 ${config.bgColor} rounded-lg border-2 border-dashed p-4`}
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
@@ -379,10 +379,12 @@ export function StudentAssignmentKanban({
       </div>
 
       {/* Kanban Board */}
-      <div className="flex space-x-4 overflow-x-auto pb-4">
-        {Object.keys(STAGE_CONFIG).map(stage => 
-          renderStageColumn(stage as AssignmentStage)
-        )}
+      <div className="overflow-x-auto">
+        <div className="flex space-x-4 pb-4 min-w-max">
+          {Object.keys(STAGE_CONFIG).map(stage => 
+            renderStageColumn(stage as AssignmentStage)
+          )}
+        </div>
       </div>
 
       {/* Summary Stats */}
@@ -394,7 +396,7 @@ export function StudentAssignmentKanban({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
             {Object.entries(STAGE_CONFIG).map(([stage, config]) => {
               const count = assignmentsByStage[stage as AssignmentStage]?.length || 0
               return (
