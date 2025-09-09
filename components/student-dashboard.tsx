@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 // Remove useSession import since we'll get user info from props
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,7 +15,8 @@ import {
   Calendar,
   Users,
   FileText,
-  Target
+  Target,
+  BookOpen
 } from 'lucide-react'
 import { Assignment, Submission, Investment, Grade, Team } from '@/types'
 import { SubmitWorkModal } from './submit-work-modal'
@@ -34,6 +36,7 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
   console.log('🔄 StudentDashboard: currentUserEmail received:', currentUserEmail)
   console.log('🔄 StudentDashboard: currentUserId received:', currentUserId)
   const user = { email: currentUserEmail, name: currentUserEmail.split('@')[0] }
+  const router = useRouter()
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [investments, setInvestments] = useState<Investment[]>([])
@@ -75,8 +78,8 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
       const [assignmentsData, submissionsData, investmentsData, gradesData, teamsData, usersData] = await Promise.all([
         assignmentsRes.json(),
         submissionsRes.json(),
-        gradesRes.json(),
         investmentsRes.json(),
+        gradesRes.json(),
         teamsRes.json(),
         usersRes.json()
       ])
@@ -86,6 +89,7 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
       setInvestments(investmentsData.data || [])
       setGrades(gradesData.data || [])
       setAllUsers(usersData.data || [])
+      
       // Filter teams to show only the ones the current user belongs to
       const userTeams = (teamsData.data || []).filter((team: Team) => 
         team.members.includes(currentUserId)
@@ -144,12 +148,24 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Welcome back, {user?.name}!
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Manage your submissions and investments
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Welcome back, {user?.name}!
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              Manage your submissions and investments
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => router.push('/courses')}
+            className="flex items-center"
+          >
+            <BookOpen className="h-4 w-4 mr-2" />
+            View Courses
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

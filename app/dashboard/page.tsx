@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AdminDashboard } from '@/components/admin-dashboard'
-import { StudentDashboard } from '@/components/student-dashboard'
+import { InstructorDashboard } from '@/components/instructor-dashboard'
 import { auth } from '@/auth'
 
 export default async function DashboardPage() {
@@ -8,18 +8,22 @@ export default async function DashboardPage() {
   const session = await auth()
   
   if (!session?.user) {
-    redirect('/auth/signin')
+    redirect('/signin')
   }
 
+  // Redirect students to course catalog
+  if (session.user.role === 'student') {
+    redirect('/courses')
+  }
+
+  // For admins and instructors, show appropriate dashboard
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {session.user.role === 'admin' ? 
-        <AdminDashboard currentUserEmail={session.user.email || ''} /> : 
-        <StudentDashboard 
-          currentUserEmail={session.user.email || ''} 
-          currentUserId={session.user.id || ''} 
-        />
-      }
-    </div>
+    <>
+      {session.user.role === 'admin' ? (
+        <AdminDashboard currentUserEmail={session.user.email || ''} />
+      ) : (
+        <InstructorDashboard currentUserEmail={session.user.email || ''} />
+      )}
+    </>
   )
 }

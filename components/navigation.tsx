@@ -93,8 +93,7 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
   const navigationLinks = useMemo(() => [
     { name: 'How it Works', href: '/#how-it-works' },
     ...(user ? [
-      { name: 'Dashboard', href: '/dashboard' },
-      ...(user.role === 'admin' ? [{ name: 'Admin', href: '/admin' }] : [])
+      { name: 'Dashboard', href: '/dashboard' }
     ] : [])
   ], [user])
 

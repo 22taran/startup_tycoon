@@ -9,19 +9,19 @@ import { CheckCircle, XCircle, AlertCircle, TrendingUp, Trophy, Target } from 'l
 
 interface Grade {
   id: string
-  assignment_id: string
-  team_id: string
-  submission_id: string
-  average_investment: number
+  assignmentId: string
+  teamId: string
+  submissionId: string
+  averageInvestment: number
   grade: 'high' | 'median' | 'low' | 'incomplete'
   percentage: number
-  total_investments: number
-  teams: {
+  totalInvestments: number
+  team: {
     id: string
     name: string
     members: string[]
   }
-  assignments?: {
+  assignment?: {
     id: string
     title: string
     due_date: string
@@ -37,6 +37,10 @@ export default function StudentGradesDisplay({ currentUserEmail }: StudentGrades
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    fetchGrades()
+  }, [currentUserEmail])
+
   const fetchGrades = async () => {
     try {
       setLoading(true)
@@ -48,7 +52,7 @@ export default function StudentGradesDisplay({ currentUserEmail }: StudentGrades
       if (data.success) {
         // Filter grades for the current user's team
         const userGrades = data.data.filter((grade: Grade) => 
-          grade.teams.members.includes(currentUserEmail)
+          grade.team.members.includes(currentUserEmail)
         )
         setGrades(userGrades)
       } else {
@@ -126,7 +130,7 @@ export default function StudentGradesDisplay({ currentUserEmail }: StudentGrades
   const lowGrades = grades.filter(g => g.grade === 'low').length
   const incompleteGrades = grades.filter(g => g.grade === 'incomplete').length
   const averageGrade = totalGrades > 0 ? grades.reduce((sum, g) => sum + g.percentage, 0) / totalGrades : 0
-  const averageInvestment = totalGrades > 0 ? grades.reduce((sum, g) => sum + g.average_investment, 0) / totalGrades : 0
+  const averageInvestment = totalGrades > 0 ? grades.reduce((sum, g) => sum + g.averageInvestment, 0) / totalGrades : 0
 
   return (
     <div className="space-y-6">
@@ -211,10 +215,10 @@ export default function StudentGradesDisplay({ currentUserEmail }: StudentGrades
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-lg">
-                      {grade.assignments?.title || `Assignment ${grade.assignment_id}`}
+                      {grade.assignment?.title || `Assignment ${grade.assignmentId}`}
                     </CardTitle>
                     <CardDescription>
-                      {grade.teams.name} • {grade.teams.members.join(', ')}
+                      {grade.team.name} • {grade.team.members.join(', ')}
                     </CardDescription>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -225,7 +229,7 @@ export default function StudentGradesDisplay({ currentUserEmail }: StudentGrades
                     <div className="text-right">
                       <div className="text-2xl font-bold">{grade.percentage}%</div>
                       <div className="text-sm text-gray-600">
-                        {grade.average_investment.toFixed(1)} avg investment
+                        {grade.averageInvestment.toFixed(1)} avg investment
                       </div>
                     </div>
                   </div>
@@ -235,15 +239,15 @@ export default function StudentGradesDisplay({ currentUserEmail }: StudentGrades
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span>Investment Average</span>
-                    <span>{grade.average_investment.toFixed(1)} tokens</span>
+                    <span>{grade.averageInvestment.toFixed(1)} tokens</span>
                   </div>
                   <Progress 
-                    value={grade.average_investment} 
+                    value={grade.averageInvestment} 
                     max={50} 
                     className="h-2"
                   />
                   <div className="flex justify-between text-sm text-gray-600">
-                    <span>Total Investments: {grade.total_investments}</span>
+                    <span>Total Investments: {grade.totalInvestments}</span>
                     <span>Final Grade: {grade.percentage}%</span>
                   </div>
                   <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">

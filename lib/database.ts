@@ -121,9 +121,20 @@ export const deleteUser = async (id: string) => {
 export const createTeam = async (teamData: Omit<Team, 'id' | 'createdAt' | 'updatedAt'>) => {
   console.log('🔄 Inserting team into Supabase:', teamData)
   const supabase = getSupabaseClient()
+  
+  // Map camelCase to snake_case for database
+  const dbTeamData = {
+    name: teamData.name,
+    description: teamData.description,
+    members: teamData.members,
+    course_id: teamData.courseId // Map courseId to course_id
+  }
+  
+  console.log('🔄 Mapped team data for database:', dbTeamData)
+  
   const { data, error } = await supabase
     .from('teams')
-    .insert([teamData])
+    .insert([dbTeamData])
     .select()
     .single()
   
@@ -148,7 +159,20 @@ export const getTeams = async () => {
     throw error
   }
   console.log('📊 Teams query result:', data)
-  return data || []
+  
+  // Map database fields to TypeScript interface
+  const mappedTeams = (data || []).map((team: any) => ({
+    id: team.id,
+    name: team.name,
+    description: team.description,
+    members: team.members,
+    courseId: team.course_id, // Map course_id to courseId
+    createdAt: new Date(team.created_at),
+    updatedAt: new Date(team.updated_at)
+  }))
+  
+  console.log('📊 Mapped teams:', mappedTeams)
+  return mappedTeams
 }
 
 export const getTeamById = async (id: string) => {
@@ -160,31 +184,91 @@ export const getTeamById = async (id: string) => {
     .single()
   
   if (error) throw error
-  return data
+  
+  // Map database fields to TypeScript interface
+  return {
+    id: data.id,
+    name: data.name,
+    description: data.description,
+    members: data.members,
+    courseId: data.course_id, // Map course_id to courseId
+    createdAt: new Date(data.created_at),
+    updatedAt: new Date(data.updated_at)
+  }
 }
 
 export const updateTeam = async (id: string, teamData: Partial<Team>) => {
   const supabase = getSupabaseClient()
+  
+  // Map camelCase to snake_case for database
+  const dbTeamData: any = {}
+  if (teamData.name !== undefined) dbTeamData.name = teamData.name
+  if (teamData.description !== undefined) dbTeamData.description = teamData.description
+  if (teamData.members !== undefined) dbTeamData.members = teamData.members
+  if (teamData.courseId !== undefined) dbTeamData.course_id = teamData.courseId
+  
   const { data, error } = await supabase
     .from('teams')
-    .update(teamData)
+    .update(dbTeamData)
     .eq('id', id)
     .select()
     .single()
   
   if (error) throw error
-  return data
+  
+  // Map database fields back to TypeScript interface
+  return {
+    id: data.id,
+    name: data.name,
+    description: data.description,
+    members: data.members,
+    courseId: data.course_id, // Map course_id to courseId
+    createdAt: new Date(data.created_at),
+    updatedAt: new Date(data.updated_at)
+  }
 }
 
 export const deleteTeam = async (id: string) => {
   const supabase = getSupabaseClient()
-  const { error } = await supabase
-    .from('teams')
-    .delete()
-    .eq('id', id)
   
-  if (error) throw error
-  return true
+  try {
+    // First, delete all related records in the correct order
+    // 1. Delete evaluations where team is either evaluated OR evaluator
+    await supabase
+      .from('evaluations')
+      .delete()
+      .or(`team_id.eq.${id},evaluator_team_id.eq.${id}`)
+    
+    // 2. Delete grades (references teams, submissions, assignments)
+    await supabase
+      .from('grades')
+      .delete()
+      .eq('team_id', id)
+    
+    // 3. Delete investments (references teams, submissions, assignments)
+    await supabase
+      .from('investments')
+      .delete()
+      .eq('team_id', id)
+    
+    // 4. Delete submissions (references teams, assignments)
+    await supabase
+      .from('submissions')
+      .delete()
+      .eq('team_id', id)
+    
+    // 5. Finally, delete the team
+    const { error } = await supabase
+      .from('teams')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Error deleting team and related data:', error)
+    throw error
+  }
 }
 
 // Assignments
@@ -321,13 +405,45 @@ export const updateAssignment = async (id: string, assignmentData: Partial<Assig
 
 export const deleteAssignment = async (id: string) => {
   const supabase = getSupabaseClient()
-  const { error } = await supabase
-    .from('assignments')
-    .delete()
-    .eq('id', id)
   
-  if (error) throw error
-  return true
+  try {
+    // First, delete all related records in the correct order
+    // 1. Delete evaluations (references submissions, teams, assignments)
+    await supabase
+      .from('evaluations')
+      .delete()
+      .eq('assignment_id', id)
+    
+    // 2. Delete grades (references submissions, teams, assignments)
+    await supabase
+      .from('grades')
+      .delete()
+      .eq('assignment_id', id)
+    
+    // 3. Delete investments (references submissions, teams, assignments)
+    await supabase
+      .from('investments')
+      .delete()
+      .eq('assignment_id', id)
+    
+    // 4. Delete submissions (references teams, assignments)
+    await supabase
+      .from('submissions')
+      .delete()
+      .eq('assignment_id', id)
+    
+    // 5. Finally, delete the assignment
+    const { error } = await supabase
+      .from('assignments')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Error deleting assignment and related data:', error)
+    throw error
+  }
 }
 
 // Submissions

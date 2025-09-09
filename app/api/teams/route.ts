@@ -10,12 +10,37 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('🔄 Fetching teams from database...')
-    const teams = await getTeams()
-    console.log('📊 Teams from database:', teams)
-    return NextResponse.json({ success: true, data: teams })
+    const { searchParams } = new URL(request.url)
+    const courseId = searchParams.get('courseId')
+    
+    console.log('🔄 Fetching teams from database...', courseId ? `for course: ${courseId}` : 'all teams')
+    
+    if (courseId) {
+      // Fetch teams for specific course
+      const { data: teams, error } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('course_id', courseId)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('❌ Error fetching teams for course:', error)
+        return NextResponse.json(
+          { success: false, error: 'Failed to fetch teams for course' },
+          { status: 500 }
+        )
+      }
+      
+      console.log('📊 Teams for course:', teams)
+      return NextResponse.json({ success: true, data: teams })
+    } else {
+      // Fetch all teams (backward compatibility)
+      const teams = await getTeams()
+      console.log('📊 All teams from database:', teams)
+      return NextResponse.json({ success: true, data: teams })
+    }
   } catch (error) {
     console.error('❌ Error fetching teams:', error)
     return NextResponse.json(
@@ -36,11 +61,18 @@ export async function POST(request: NextRequest) {
     const user = session.user
 
     const body = await request.json()
-    const { name, members, description } = body
+    const { name, members, description, courseId } = body
 
     if (!name || !members) {
       return NextResponse.json(
         { success: false, error: 'Name and members are required' },
+        { status: 400 }
+      )
+    }
+
+    if (!courseId) {
+      return NextResponse.json(
+        { success: false, error: 'Course ID is required' },
         { status: 400 }
       )
     }
@@ -65,11 +97,12 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    console.log('🔄 Creating team with data:', { name, memberEmails, memberUserIds, description, created_by: user.id })
+    console.log('🔄 Creating team with data:', { name, memberEmails, memberUserIds, description, courseId, created_by: user.id })
     const newTeam = await createTeam({
       name,
       members: memberUserIds,
-      description: description || ''
+      description: description || '',
+      courseId: courseId
     } as any)
     console.log('✅ Team created successfully:', newTeam)
 

@@ -10,19 +10,19 @@ import { CheckCircle, XCircle, AlertCircle, TrendingUp, Users, Target } from 'lu
 
 interface Grade {
   id: string
-  assignment_id: string
-  team_id: string
-  submission_id: string
-  average_investment: number
+  assignmentId: string
+  teamId: string
+  submissionId: string
+  averageInvestment: number
   grade: 'high' | 'median' | 'low' | 'incomplete'
   percentage: number
-  total_investments: number
-  teams: {
+  totalInvestments: number
+  team: {
     id: string
     name: string
     members: string[]
   }
-  assignments?: {
+  assignment?: {
     id: string
     title: string
     due_date: string
@@ -229,9 +229,9 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">{grade.teams.name}</CardTitle>
+                    <CardTitle className="text-lg">{grade.team.name}</CardTitle>
                     <CardDescription>
-                      {grade.teams.members.join(', ')}
+                      {grade.team.members.join(', ')}
                     </CardDescription>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -242,7 +242,7 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
                     <div className="text-right">
                       <div className="text-2xl font-bold">{grade.percentage}%</div>
                       <div className="text-sm text-gray-600">
-                        {grade.average_investment.toFixed(1)} avg investment
+                        {grade.averageInvestment.toFixed(1)} avg investment
                       </div>
                     </div>
                   </div>
@@ -252,15 +252,15 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Investment Average</span>
-                    <span>{grade.average_investment.toFixed(1)} tokens</span>
+                    <span>{grade.averageInvestment.toFixed(1)} tokens</span>
                   </div>
                   <Progress 
-                    value={grade.average_investment} 
+                    value={grade.averageInvestment} 
                     max={50} 
                     className="h-2"
                   />
                   <div className="flex justify-between text-sm text-gray-600">
-                    <span>Total Investments: {grade.total_investments}</span>
+                    <span>Total Investments: {grade.totalInvestments}</span>
                     <span>Grade: {grade.percentage}%</span>
                   </div>
                 </div>

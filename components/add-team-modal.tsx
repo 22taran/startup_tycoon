@@ -21,9 +21,10 @@ interface AddTeamModalProps {
   onTeamAdded: () => void
   currentUserEmail: string
   userRole?: 'admin' | 'student'
+  courseId?: string
 }
 
-export function AddTeamModal({ open, onOpenChange, onTeamAdded, currentUserEmail, userRole = 'student' }: AddTeamModalProps) {
+export function AddTeamModal({ open, onOpenChange, onTeamAdded, currentUserEmail, userRole = 'student', courseId }: AddTeamModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -65,7 +66,8 @@ export function AddTeamModal({ open, onOpenChange, onTeamAdded, currentUserEmail
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
-          members: members
+          members: members,
+          courseId: courseId
         }),
       })
 

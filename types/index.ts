@@ -10,12 +10,36 @@ export interface User {
   updatedAt: Date
 }
 
+// Course Types
+export interface Course {
+  id: string
+  name: string
+  description?: string
+  code: string // e.g., "CS101", "BUS200"
+  semester: string // e.g., "Fall 2024", "Spring 2025"
+  year: number
+  instructorId: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CourseEnrollment {
+  id: string
+  courseId: string
+  userId: string
+  role: 'student' | 'instructor' | 'ta'
+  enrolledAt: Date
+  status: 'active' | 'inactive'
+}
+
 // Team Types
 export interface Team {
   id: string
   name: string
   members: string[] // User IDs
   description?: string
+  courseId: string // Link teams to specific courses
   createdAt: Date
   updatedAt: Date
 }
@@ -32,6 +56,7 @@ export interface Assignment {
   evaluationStartDate?: Date
   evaluationDueDate?: Date
   isEvaluationActive: boolean
+  courseId: string // Link assignments to specific courses
   createdAt: Date
   updatedAt: Date
 }
@@ -141,6 +166,7 @@ export interface TeamRow {
   name: string
   description?: string
   members: string[]
+  course_id: string
   created_by?: string
   created_at: string
   updated_at: string
@@ -157,6 +183,7 @@ export interface AssignmentRow {
   evaluation_start_date?: string
   evaluation_due_date?: string
   is_evaluation_active?: boolean
+  course_id: string
   created_by?: string
   created_at: string
   updated_at: string
@@ -276,7 +303,31 @@ export interface ActivityLog {
   userId: string
   teamId?: string
   assignmentId?: string
+  courseId?: string
   timestamp: Date
+}
+
+// Course-related row types
+export interface CourseRow {
+  id: string
+  name: string
+  description?: string
+  code: string
+  semester: string
+  year: number
+  instructor_id: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CourseEnrollmentRow {
+  id: string
+  course_id: string
+  user_id: string
+  role: 'student' | 'instructor' | 'ta'
+  enrolled_at: string
+  status: 'active' | 'inactive'
 }
 
 // Form Types
@@ -304,6 +355,21 @@ export interface AssignmentForm {
   startDate: string
   dueDate: string
   document?: File
+  courseId: string
+}
+
+export interface CourseForm {
+  name: string
+  description?: string
+  code: string
+  semester: string
+  year: number
+}
+
+export interface EnrollmentForm {
+  courseId: string
+  userEmails: string[]
+  role: 'student' | 'instructor' | 'ta'
 }
 
 // Excel Export Types

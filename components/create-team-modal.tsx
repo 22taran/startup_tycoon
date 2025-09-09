@@ -20,9 +20,10 @@ interface CreateTeamModalProps {
   onOpenChange: (open: boolean) => void
   onTeamCreated: () => void
   currentUserEmail: string
+  courseId?: string
 }
 
-export function CreateTeamModal({ open, onOpenChange, onTeamCreated, currentUserEmail }: CreateTeamModalProps) {
+export function CreateTeamModal({ open, onOpenChange, onTeamCreated, currentUserEmail, courseId }: CreateTeamModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -78,7 +79,8 @@ export function CreateTeamModal({ open, onOpenChange, onTeamCreated, currentUser
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
-          members: members
+          members: members,
+          courseId: courseId
         }),
       })
 
