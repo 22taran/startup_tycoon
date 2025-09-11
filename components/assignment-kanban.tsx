@@ -108,8 +108,12 @@ export function AssignmentKanban({
       teams: teams.length,
       grades: grades.length
     })
-    console.log('📊 All submissions:', submissions)
-    console.log('📊 All investments:', investments)
+    console.log('📊 Assignments in kanban:', assignments.map(a => ({
+      id: a.id,
+      title: a.title,
+      isActive: a.isActive,
+      isEvaluationActive: a.isEvaluationActive
+    })))
     setLastRefresh(new Date())
   }, [assignments, submissions, investments, teams, grades])
 
@@ -120,6 +124,7 @@ export function AssignmentKanban({
     const dueDate = new Date(assignment.dueDate)
     const evaluationStartDate = assignment.evaluationStartDate ? new Date(assignment.evaluationStartDate) : null
     const evaluationDueDate = assignment.evaluationDueDate ? new Date(assignment.evaluationDueDate) : null
+
 
     // Check if assignment has grades (indicating completion)
     const assignmentGrades = grades.filter(g => g.assignmentId === assignment.id)
@@ -132,8 +137,18 @@ export function AssignmentKanban({
       return 'completed'
     }
 
-    // Check if assignment is in evaluation period
-    if (assignment.isEvaluationActive && evaluationStartDate && now >= evaluationStartDate && (!evaluationDueDate || now <= evaluationDueDate)) {
+    // Check if assignment is in evaluation period - THIS SHOULD BE CHECKED FIRST
+    if (assignment.isEvaluationActive) {
+      // If evaluation is active, check if we're within the evaluation period
+      const isWithinEvaluationPeriod = !evaluationStartDate || now >= evaluationStartDate
+      const isBeforeEvaluationEnd = !evaluationDueDate || now <= evaluationDueDate
+      
+      if (isWithinEvaluationPeriod && isBeforeEvaluationEnd) {
+        return 'evaluation'
+      }
+      
+      // If evaluation is active but we're outside the period, still show as evaluation
+      // This handles cases where evaluation dates aren't set yet
       return 'evaluation'
     }
 
@@ -162,6 +177,8 @@ export function AssignmentKanban({
 
   // Get assignment statistics
   const getAssignmentStats = (assignment: Assignment) => {
+    const stage = getAssignmentStage(assignment)
+    
     const assignmentSubmissions = submissions.filter(s => s.assignmentId === assignment.id)
     const assignmentInvestments = investments.filter(i => i.assignmentId === assignment.id)
     const assignmentGrades = grades.filter(g => g.assignmentId === assignment.id)
@@ -227,7 +244,7 @@ export function AssignmentKanban({
   const renderAssignmentCard = (assignment: Assignment) => {
     const stage = getAssignmentStage(assignment)
     const stats = getAssignmentStats(assignment)
-    const isDistributed = distributionStatus[assignment.id]
+    const isDistributed = assignment.isEvaluationActive || distributionStatus[assignment.id]
     const isDistributing = distributing === assignment.id
 
     return (

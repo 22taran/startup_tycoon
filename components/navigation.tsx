@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { signOut, useSession } from 'next-auth/react'
+import { signOut, useSession, getSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -46,10 +46,35 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
   
   // Use only client-side session to avoid conflicts
   const user = useMemo(() => {
-    return session?.user || null
+    if (session?.user) {
+      return {
+        id: session.user.id || '',
+        email: session.user.email || '',
+        name: session.user.name || '',
+        role: (session.user as any).role || 'student'
+      }
+    }
+    return null
   }, [session?.user])
   
   const isLoading = status === 'loading'
+  
+  // Add a timeout for loading state to prevent infinite loading
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  
+  useEffect(() => {
+    if (status === 'loading') {
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true)
+      }, 3000) // 3 second timeout
+      
+      return () => clearTimeout(timer)
+    } else {
+      setLoadingTimeout(false)
+    }
+  }, [status])
+  
+  // Session will now update automatically via SessionProvider
 
   // Memoize handlers
   const handleSignOut = useCallback(async () => {
@@ -79,6 +104,14 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
   const openAuthModal = useCallback((tab: 'signin' | 'signup') => {
     setAuthModalTab(tab)
     setIsAuthModalOpen(true)
+  }, [])
+
+  const refreshSession = useCallback(async () => {
+    console.log('Manually refreshing session...')
+    const freshSession = await getSession()
+    console.log('Fresh session:', freshSession)
+    // Force a re-render by updating state
+    setLoadingTimeout(false)
   }, [])
 
   const closeAuthModal = useCallback(() => {
@@ -114,7 +147,7 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
           </div>
 
           {/* Center - Desktop Navigation */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2">
             <div className="flex items-baseline space-x-4">
               {navigationLinks.map((link) => (
                 <Link
@@ -132,10 +165,37 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
           <div className="hidden md:flex items-center space-x-3">
             <ThemeToggle />
             
-            {isLoading ? (
+            {isLoading && !loadingTimeout ? (
               <div className="flex items-center space-x-2">
                 <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-8 w-20 rounded"></div>
                 <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-8 w-16 rounded"></div>
+              </div>
+            ) : loadingTimeout ? (
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
+                  onClick={refreshSession}
+                >
+                  Refresh
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
+                  onClick={() => openAuthModal('signin')}
+                >
+                  Log In
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200"
+                  onClick={() => openAuthModal('signup')}
+                >
+                  <Play className="h-4 w-4 mr-1" />
+                  Get Started
+                </Button>
               </div>
             ) : user ? (
               <DropdownMenu>
@@ -245,12 +305,48 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
                 </Link>
               ))}
 
-              {isLoading ? (
+              {isLoading && !loadingTimeout ? (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="animate-pulse space-y-2">
                     <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
                     <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
                   </div>
+                </div>
+              ) : loadingTimeout ? (
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
+                    onClick={() => {
+                      refreshSession()
+                      setIsOpen(false)
+                    }}
+                  >
+                    Refresh
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
+                    onClick={() => {
+                      openAuthModal('signin')
+                      setIsOpen(false)
+                    }}
+                  >
+                    Log In
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200"
+                    onClick={() => {
+                      openAuthModal('signup')
+                      setIsOpen(false)
+                    }}
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Get Started
+                  </Button>
                 </div>
               ) : user ? (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">

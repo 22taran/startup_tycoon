@@ -75,8 +75,12 @@ export function SubmitWorkModal({
     }
 
     try {
-      const response = await fetch('/api/submissions', {
-        method: 'POST',
+      const isEditing = !!existingSubmission
+      const url = isEditing ? `/api/submissions/${existingSubmission.id}` : '/api/submissions'
+      const method = isEditing ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -93,6 +97,7 @@ export function SubmitWorkModal({
       const data = await response.json()
 
       if (data.success) {
+        console.log(`✅ ${isEditing ? 'Submission updated' : 'Submission created'}, calling onSubmissionAdded...`)
         // Reset form
         setFormData({
           primaryLink: '',
@@ -100,8 +105,9 @@ export function SubmitWorkModal({
         })
         onOpenChange(false)
         onSubmissionAdded()
+        console.log('✅ onSubmissionAdded called')
       } else {
-        setError(data.error || 'Failed to submit work')
+        setError(data.error || `Failed to ${isEditing ? 'update' : 'submit'} work`)
       }
     } catch (error) {
       setError('An error occurred. Please try again.')
@@ -115,10 +121,10 @@ export function SubmitWorkModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {existingSubmission ? 'View Submission' : 'Submit Work'}
+            {existingSubmission ? 'Edit Submission' : 'Submit Work'}
           </DialogTitle>
           <DialogDescription>
-            {existingSubmission ? 'View your submitted work for:' : 'Submit your work for:'} {assignmentTitle}
+            {existingSubmission ? 'Update your submitted work for:' : 'Submit your work for:'} {assignmentTitle}
           </DialogDescription>
           <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <p className="text-sm text-blue-700 dark:text-blue-300">
@@ -126,10 +132,13 @@ export function SubmitWorkModal({
             </p>
             {existingSubmission && (
               <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                <strong>Submitted:</strong> {existingSubmission.submittedAt ? 
-                  new Date(existingSubmission.submittedAt).toLocaleDateString() + ' at ' + 
-                  new Date(existingSubmission.submittedAt).toLocaleTimeString() : 
-                  'Unknown'
+                <strong>Status:</strong> {existingSubmission.status === 'submitted' ? 
+                  (existingSubmission.submittedAt ? 
+                    'Submitted on ' + new Date(existingSubmission.submittedAt).toLocaleDateString() + ' at ' + 
+                    new Date(existingSubmission.submittedAt).toLocaleTimeString() : 
+                    'Submitted (no date)'
+                  ) : 
+                  existingSubmission.status || 'Draft'
                 }
               </p>
             )}
@@ -205,11 +214,9 @@ export function SubmitWorkModal({
             >
               {existingSubmission ? 'Close' : 'Cancel'}
             </Button>
-            {!existingSubmission && (
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Submitting...' : 'Submit Work'}
-              </Button>
-            )}
+            <Button type="submit" disabled={loading}>
+              {loading ? (existingSubmission ? 'Updating...' : 'Submitting...') : (existingSubmission ? 'Update Submission' : 'Submit Work')}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

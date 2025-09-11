@@ -28,7 +28,9 @@ interface StudentAssignmentKanbanProps {
   submissions: Submission[]
   investments: Investment[]
   grades: Grade[]
+  teams: any[]
   currentUserEmail: string
+  currentUserId: string
   onAssignmentAction: (assignment: Assignment, action: 'submit' | 'invest' | 'view-grades') => void
 }
 
@@ -78,14 +80,17 @@ export function StudentAssignmentKanban({
   submissions,
   investments,
   grades,
+  teams,
   currentUserEmail,
+  currentUserId,
   onAssignmentAction
 }: StudentAssignmentKanbanProps) {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
   useEffect(() => {
+    console.log('🔄 StudentAssignmentKanban: Data changed, refreshing...')
     setLastRefresh(new Date())
-  }, [assignments, submissions, investments, grades])
+  }, [assignments, submissions, investments, grades, teams])
 
   // Determine assignment stage based on student perspective
   const getAssignmentStage = (assignment: Assignment): AssignmentStage => {
@@ -106,8 +111,18 @@ export function StudentAssignmentKanban({
       return 'completed'
     }
 
-    // Check if assignment is in evaluation period
-    if (assignment.isEvaluationActive && evaluationStartDate && now >= evaluationStartDate && (!evaluationDueDate || now <= evaluationDueDate)) {
+    // Check if assignment is in evaluation period - THIS SHOULD BE CHECKED FIRST
+    if (assignment.isEvaluationActive) {
+      // If evaluation is active, check if we're within the evaluation period
+      const isWithinEvaluationPeriod = !evaluationStartDate || now >= evaluationStartDate
+      const isBeforeEvaluationEnd = !evaluationDueDate || now <= evaluationDueDate
+      
+      if (isWithinEvaluationPeriod && isBeforeEvaluationEnd) {
+        return 'evaluation'
+      }
+      
+      // If evaluation is active but we're outside the period, still show as evaluation
+      // This handles cases where evaluation dates aren't set yet
       return 'evaluation'
     }
 
@@ -118,7 +133,7 @@ export function StudentAssignmentKanban({
 
     // Check if submission period has ended but evaluation hasn't started
     if (now > dueDate && !assignment.isEvaluationActive) {
-      return 'evaluation'
+      return 'in-progress' // Keep in submission phase until admin starts evaluation
     }
 
     // Check if assignment is not active yet (before start date)
@@ -136,12 +151,24 @@ export function StudentAssignmentKanban({
 
   // Get assignment statistics from student perspective
   const getAssignmentStats = (assignment: Assignment) => {
-    const isSubmitted = submissions.some(s => s.assignmentId === assignment.id && s.status === 'submitted')
+    // Use the simple submission check function with the current user ID
+    const { checkStudentSubmissionStatus } = require('@/lib/simple-submission-check')
+    
+    const status = checkStudentSubmissionStatus(assignment.id, currentUserId, submissions, teams)
+    
+    console.log(`🔍 getAssignmentStats for ${assignment.title}:`, {
+      studentId: currentUserId,
+      studentEmail: currentUserEmail,
+      isSubmitted: status.isSubmitted,
+      submissionsCount: submissions.length,
+      relevantSubmissions: submissions.filter(s => s.assignmentId === assignment.id)
+    })
+    
     const hasInvested = investments.some(i => i.assignmentId === assignment.id)
     const assignmentGrades = grades.filter(g => g.assignmentId === assignment.id)
     
     return {
-      isSubmitted,
+      isSubmitted: status.isSubmitted,
       hasInvested,
       totalGrades: assignmentGrades.length,
       averageGrade: assignmentGrades.length > 0 ? 
@@ -262,29 +289,92 @@ export function StudentAssignmentKanban({
             )}
 
             {stage === 'in-progress' && (
-              <Button
-                size="sm"
-                className="w-full text-xs h-7"
-                onClick={() => onAssignmentAction(assignment, 'submit')}
-                disabled={stats.isSubmitted}
-              >
-                {stats.isSubmitted ? (
-                  <>
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Submitted
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-3 w-3 mr-1" />
-                    Submit Work
-                  </>
-                )}
-              </Button>
+              <div className="space-y-2">
+                {(() => {
+                  const now = new Date()
+                  const dueDate = new Date(assignment.dueDate)
+                  const isPastDue = now > dueDate
+                  
+                  if (isPastDue && !assignment.isEvaluationActive) {
+                    // Due date passed but evaluation not started
+                    return (
+                      <div className="text-center">
+                        <div className="flex items-center justify-center text-orange-600 text-xs mb-2">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Submission Closed
+                        </div>
+                        {stats.isSubmitted ? (
+                          <div className="flex items-center justify-center text-green-600 text-xs">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Submitted
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center text-red-600 text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Not Submitted
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Waiting for evaluation to start
+                        </div>
+                      </div>
+                    )
+                  }
+                  
+                  // Normal submission period
+                  if (stats.isSubmitted) {
+                    return (
+                      <>
+                        <div className="flex items-center justify-center text-green-600 text-xs">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Submitted
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs h-7"
+                          onClick={() => onAssignmentAction(assignment, 'submit')}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit Submission
+                        </Button>
+                      </>
+                    )
+                  } else {
+                    return (
+                      <Button
+                        size="sm"
+                        className="w-full text-xs h-7"
+                        onClick={() => onAssignmentAction(assignment, 'submit')}
+                      >
+                        <Upload className="h-3 w-3 mr-1" />
+                        Submit Work
+                      </Button>
+                    )
+                  }
+                })()}
+              </div>
             )}
 
             {stage === 'evaluation' && (
               <div className="space-y-2">
-                {!stats.isSubmitted && (
+                {stats.isSubmitted ? (
+                  <>
+                    <div className="flex items-center justify-center text-green-600 text-xs">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Submitted
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs h-7"
+                      onClick={() => onAssignmentAction(assignment, 'submit')}
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit Submission
+                    </Button>
+                  </>
+                ) : (
                   <Button
                     size="sm"
                     variant="outline"

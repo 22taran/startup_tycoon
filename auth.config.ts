@@ -50,7 +50,7 @@ async function getUser(email: string): Promise<User | undefined> {
 
 export const authOptions: NextAuthOptions = {
   pages: {
-    signIn: '/signin',
+    signIn: '/',
   },
   providers: [
     CredentialsProvider({
@@ -90,6 +90,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string
+        session.user.name = token.name as string
+        session.user.email = token.email as string
         session.user.role = token.role as 'admin' | 'student'
       }
       return session
@@ -97,6 +99,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        token.name = user.name
+        token.email = user.email
         token.role = user.role
       }
       return token

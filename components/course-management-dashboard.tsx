@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import type { Assignment } from '@/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +33,9 @@ import { AddTeamModal } from './add-team-modal'
 import { ManageTeamsModal } from './manage-teams-modal'
 import { AddAssignmentModal } from './add-assignment-modal'
 import { EditAssignmentModal } from './edit-assignment-modal'
+import { SetEvaluationDeadlineModal } from './set-evaluation-deadline-modal'
+import { EvaluationStatusTable } from './evaluation-status-table'
+import GradesInterestReport from './grades-interest-report'
 import { Course, CourseEnrollment } from '@/types'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -74,6 +78,10 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
   const [enrollmentEmails, setEnrollmentEmails] = useState('')
   const [enrollmentRole, setEnrollmentRole] = useState<'student' | 'instructor' | 'ta'>('student')
   const [enrolling, setEnrolling] = useState(false)
+  const [distributing, setDistributing] = useState<string | null>(null)
+  const [distributionStatus, setDistributionStatus] = useState<Record<string, boolean>>({})
+  const [showEvaluationDeadlineModal, setShowEvaluationDeadlineModal] = useState(false)
+  const [selectedAssignmentForDistribution, setSelectedAssignmentForDistribution] = useState<Assignment | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -83,6 +91,7 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
   const fetchCourseData = async () => {
     try {
       setLoading(true)
+      console.log('🔄 fetchCourseData called')
       
       // Fetch course details
       const courseResponse = await fetch(`/api/courses/${courseId}`)
@@ -111,6 +120,13 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
         gradesRes.json()
       ])
 
+      console.log('📊 Fetched assignments:', assignmentsData.data?.map((a: any) => ({
+        id: a.id,
+        title: a.title,
+        isActive: a.isActive,
+        isEvaluationActive: a.isEvaluationActive
+      })))
+
       setAssignments(assignmentsData.data || [])
       setTeams(teamsData.data || [])
       setSubmissions(submissionsData.data || [])
@@ -135,6 +151,56 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
   const handleEditAssignment = (assignment: any) => {
     setSelectedAssignment(assignment)
     setShowEditAssignmentModal(true)
+  }
+
+  const handleDistributeAssignment = (assignment: Assignment) => {
+    setSelectedAssignmentForDistribution(assignment)
+    setShowEvaluationDeadlineModal(true)
+  }
+
+  const handleEvaluationDeadlineSet = async (startDate: Date, dueDate: Date, evaluationsPerStudent: number) => {
+    if (!selectedAssignmentForDistribution) return
+
+    try {
+      setDistributing(selectedAssignmentForDistribution.id)
+      setDistributionStatus(prev => ({ ...prev, [selectedAssignmentForDistribution.id]: true }))
+      
+      console.log('🎯 Starting evaluation distribution for assignment:', selectedAssignmentForDistribution.id)
+      console.log('📅 Evaluation period:', startDate.toISOString(), 'to', dueDate.toISOString())
+      console.log('👥 Evaluations per student:', evaluationsPerStudent)
+      
+      const response = await fetch(`/api/assignments/${selectedAssignmentForDistribution.id}/distribute-individual`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          evaluationsPerStudent,
+          evaluationStartDate: startDate.toISOString(),
+          evaluationDueDate: dueDate.toISOString()
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        console.log('✅ Evaluation distribution successful:', data)
+        console.log('🔄 Refreshing course data...')
+        // Refresh data to show updated status
+        await fetchCourseData()
+        console.log('✅ Course data refreshed')
+      } else {
+        console.error('❌ Evaluation distribution failed:', data.error)
+        alert(`Failed to distribute evaluations: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('❌ Error distributing evaluations:', error)
+      alert('Failed to distribute evaluations. Please try again.')
+    } finally {
+      setDistributing(null)
+      setDistributionStatus(prev => ({ ...prev, [selectedAssignmentForDistribution.id]: false }))
+      setSelectedAssignmentForDistribution(null)
+    }
   }
 
   const handleEnrollStudents = async (e: React.FormEvent) => {
@@ -325,7 +391,9 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
           <TabsTrigger value="announcements">📢 Announcements</TabsTrigger>
           <TabsTrigger value="teams">👥 Teams</TabsTrigger>
           <TabsTrigger value="students">🎓 Students</TabsTrigger>
+          <TabsTrigger value="evaluations">📋 Evaluations</TabsTrigger>
           <TabsTrigger value="grades">📊 Grades</TabsTrigger>
+          <TabsTrigger value="reports">📋 Reports</TabsTrigger>
           <TabsTrigger value="analytics">📈 Analytics</TabsTrigger>
           <TabsTrigger value="resources">📁 Resources</TabsTrigger>
           <TabsTrigger value="calendar">📅 Calendar</TabsTrigger>
@@ -339,10 +407,10 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
             submissions={submissions}
             investments={investments}
             grades={grades}
-            onDistributeAssignment={() => {}}
+            onDistributeAssignment={handleDistributeAssignment}
             onEditAssignment={handleEditAssignment}
-            distributing={null}
-            distributionStatus={{}}
+            distributing={distributing}
+            distributionStatus={distributionStatus}
             onRefresh={fetchCourseData}
           />
         </TabsContent>
@@ -613,9 +681,89 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
           </Card>
         </TabsContent>
 
+        {/* Evaluations Tab */}
+        <TabsContent value="evaluations" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Evaluation Status</h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Track evaluation submissions and progress
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-6">
+            {assignments.filter(a => a.isEvaluationActive).map((assignment) => (
+              <Card key={assignment.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                  <CardDescription>
+                    Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'TBD'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <EvaluationStatusTable assignmentId={assignment.id} />
+                </CardContent>
+              </Card>
+            ))}
+            
+            {assignments.filter(a => a.isEvaluationActive).length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-500">No evaluations in progress</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
         {/* Grades Tab */}
         <TabsContent value="grades" className="space-y-6">
-          <GradesDisplay showCalculateButton={true} />
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Grades & Performance</h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  View and calculate grades for all assignments
+                </p>
+              </div>
+            </div>
+            
+            {assignments.length > 0 ? (
+              <div className="space-y-4">
+                {assignments.map((assignment) => (
+                  <Card key={assignment.id}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                      <CardDescription>
+                        Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'TBD'}
+                        {assignment.isEvaluationActive && (
+                          <span className="ml-2 text-green-600 font-medium">• Evaluation Active</span>
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <GradesDisplay 
+                        assignmentId={assignment.id} 
+                        showCalculateButton={true} 
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-500">No assignments found</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports" className="space-y-6">
+          <GradesInterestReport />
         </TabsContent>
 
         {/* Analytics Tab */}
@@ -757,6 +905,17 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
         assignment={selectedAssignment}
         onAssignmentUpdated={fetchCourseData}
       />
+
+      {/* Set Evaluation Deadline Modal */}
+      {selectedAssignmentForDistribution && (
+        <SetEvaluationDeadlineModal
+          open={showEvaluationDeadlineModal}
+          onOpenChange={setShowEvaluationDeadlineModal}
+          onDeadlineSet={handleEvaluationDeadlineSet}
+          assignmentTitle={selectedAssignmentForDistribution.title}
+          assignmentDueDate={selectedAssignmentForDistribution.dueDate}
+        />
+      )}
 
       {/* Create Team Modal */}
       <AddTeamModal

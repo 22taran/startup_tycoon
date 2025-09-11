@@ -6,64 +6,109 @@ import {
   DollarSign, 
   Calculator, 
   Trophy,
-  ArrowRight
+  ArrowRight,
+  BookOpen,
+  Target,
+  TrendingUp,
+  Award
 } from 'lucide-react'
 
 const steps = [
   {
     step: 1,
-    icon: Upload,
-    title: 'Submit Your Work',
-    description: 'Each team submits their assignment through the platform with detailed descriptions and file uploads.',
+    icon: BookOpen,
+    title: 'Enroll in Courses',
+    description: 'Join courses created by instructors and access your personalized course dashboard.',
     details: [
-      'Due every Wednesday (Weeks 3, 5, 7, 9, 11, 13)',
-      'Late submissions get 50% deduction',
-      'No submissions allowed once evaluation starts'
+      'Browse available courses in the catalog',
+      'Enroll with a single click',
+      'Access course-specific assignments and teams',
+      'View your progress and grades'
     ]
   },
   {
     step: 2,
     icon: Users,
-    title: 'Get Assigned Teams',
-    description: 'You\'ll be assigned 5 teams to evaluate each round. Each team gets evaluated by 5 different students.',
+    title: 'Form Assignment Teams',
+    description: 'Create or join teams for each assignment. Teams can change between assignments.',
     details: [
-      'Evaluation opens Saturday, closes Monday',
-      'No late evaluations allowed',
-      'Each team receives 10 total investments'
+      'Exactly 2 students per team',
+      'Different teams for different assignments',
+      'Teams lock once submission is made',
+      'Change teams before submission deadline'
     ]
   },
   {
     step: 3,
-    icon: DollarSign,
-    title: 'Invest Your Tokens',
-    description: 'Invest 10-50 tokens in up to 3 teams. You have 100 tokens per round to distribute.',
+    icon: Upload,
+    title: 'Submit Your Work',
+    description: 'Submit your team\'s assignment with primary and backup links before the deadline.',
     details: [
-      'Minimum investment: 10 tokens',
-      'Maximum investment: 50 tokens',
-      'Mark incomplete submissions as 0 tokens'
+      'Submit before assignment deadline',
+      'Provide both primary and backup links',
+      'Team submissions are locked after deadline',
+      'Track submission status in real-time'
     ]
   },
   {
     step: 4,
-    icon: Calculator,
-    title: 'Automatic Grading',
-    description: 'Grades are calculated by averaging investments, removing highest and lowest values.',
+    icon: Target,
+    title: 'Evaluate Assigned Teams',
+    description: 'You\'ll be assigned 5 teams to evaluate for each assignment. Complete evaluations individually.',
     details: [
-      'High Investment (top 1/3): 100%',
-      'Median Investment (middle 1/3): 80%',
-      'Low Investment (bottom 1/3): 60%',
-      'Incomplete: 0%'
+      'Each student evaluates 5 teams individually',
+      'No self-evaluation allowed',
+      'Complete evaluations before deadline',
+      'View team submissions and provide feedback'
     ]
   },
   {
     step: 5,
-    icon: Trophy,
+    icon: DollarSign,
+    title: 'Invest Your Tokens',
+    description: 'Invest 10-50 tokens in up to 3 of your assigned teams. You have 100 tokens per assignment.',
+    details: [
+      'Invest in 3 out of 5 assigned teams',
+      'Minimum: 10 tokens, Maximum: 50 tokens per team',
+      'Total: 100 tokens per assignment',
+      'Mark incomplete submissions as 0 tokens'
+    ]
+  },
+  {
+    step: 6,
+    icon: Calculator,
+    title: 'Automatic Grading',
+    description: 'Grades are calculated using the investment system with performance tiers.',
+    details: [
+      'High Performance (top 1/3): 100%',
+      'Median Performance (middle 1/3): 80%',
+      'Low Performance (bottom 1/3): 60%',
+      'Incomplete submissions: 0%'
+    ]
+  },
+  {
+    step: 7,
+    icon: TrendingUp,
     title: 'Earn Interest & Bonus',
     description: 'Earn interest on successful investments. Accumulate bonus marks up to +20% of final grade.',
     details: [
-      'Interest rates vary by team performance',
-      'Track your portfolio across all rounds',
-      'Exchange interest for bonus marks'
+      'Interest calculated immediately after grading',
+      'High performance: 20% interest rate',
+      'Median performance: 10% interest rate',
+      'Low performance: 5% interest rate',
+      'Track total interest across all assignments'
+    ]
+  },
+  {
+    step: 8,
+    icon: Award,
+    title: 'Track Your Progress',
+    description: 'Monitor your performance, investments, and interest earnings across all assignments.',
+    details: [
+      'View grades and feedback for each assignment',
+      'Track your investment portfolio performance',
+      'Monitor interest earnings and bonus potential',
+      'Access detailed reports and analytics'
     ]
   }
 ]
@@ -77,7 +122,7 @@ export function HowItWorks() {
             How It Works
           </h2>
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
-            Follow these 5 simple steps to participate in the Startup Tycoon game.
+            Follow these 8 steps to participate in the Startup Tycoon game and maximize your learning experience.
           </p>
         </div>
         
@@ -115,6 +160,101 @@ export function HowItWorks() {
               </Card>
             </div>
           ))}
+        </div>
+
+        {/* Instructor/Admin Section */}
+        <div className="mt-20">
+          <div className="mx-auto max-w-2xl text-center mb-16">
+            <h3 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+              For Instructors & Administrators
+            </h3>
+            <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
+              Manage courses, assignments, and monitor student progress with powerful admin tools.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-600 text-white">
+                    <BookOpen className="h-6 w-6" />
+                  </div>
+                  <CardTitle className="text-xl">Course Management</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-green-600 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Create and manage multiple courses</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-green-600 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Enroll students and manage roles</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-green-600 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Set assignment deadlines and phases</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white">
+                    <Target className="h-6 w-6" />
+                  </div>
+                  <CardTitle className="text-xl">Assignment Control</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-blue-600 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Distribute individual evaluations</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-blue-600 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Monitor submission and evaluation status</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-blue-600 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Trigger automatic grading</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-600 text-white">
+                    <TrendingUp className="h-6 w-6" />
+                  </div>
+                  <CardTitle className="text-xl">Analytics & Reports</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-purple-600 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">View detailed grade reports</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-purple-600 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Track student interest earnings</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-purple-600 mt-1 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300">Download comprehensive reports</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </section>

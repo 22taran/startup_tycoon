@@ -3,10 +3,18 @@
 const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    // Enable modern bundling for better performance
+    esmExternals: true,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Enable compression
+  compress: true,
+  // Enable static optimization
+  trailingSlash: false,
+  // Performance optimizations
+  poweredByHeader: false,
   images: {
     domains: ['lh3.googleusercontent.com'],
     formats: ['image/webp', 'image/avif'],
@@ -42,8 +50,12 @@ const nextConfig = {
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Performance headers
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         ],
       },
+      // Note: API caching removed to prevent session/auth issues
     ]
   },
 }

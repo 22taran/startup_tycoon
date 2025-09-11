@@ -11,7 +11,7 @@ export default async function SettingsPage() {
   const session = await auth()
   
   if (!session?.user) {
-    redirect('/signin')
+    redirect('/')
   }
 
   return (
