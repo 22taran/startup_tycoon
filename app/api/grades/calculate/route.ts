@@ -27,8 +27,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Assignment ID is required' }, { status: 400 })
     }
     
-    console.log(`🔄 Starting grading and interest calculation for assignment: ${assignmentId}`)
-    
     // Step 1: Get all teams that have submissions for this assignment
     const { data: submissions, error: submissionsError } = await supabase
       .from('submissions')
@@ -41,10 +39,8 @@ export async function POST(request: NextRequest) {
     
     if (submissionsError) throw submissionsError
     
-    console.log(`📊 Found ${submissions.length} team submissions`)
-    
     // Get team data separately
-    const teamIds = [...new Set(submissions.map(s => s.team_id))]
+    const teamIds = Array.from(new Set(submissions.map(s => s.team_id)))
     const { data: teams, error: teamsError } = await supabase
       .from('teams')
       .select('id, name')
@@ -57,14 +53,11 @@ export async function POST(request: NextRequest) {
       return acc
     }, {} as Record<string, any>)
     
-    console.log('📊 Teams map:', teamsMap)
-    
     // Step 2: Calculate grades for each team
     const teamGrades = []
     
     for (const submission of submissions) {
       const teamName = teamsMap[submission.team_id]?.name || 'Unknown'
-      console.log(`🎯 Calculating grade for team: ${teamName}`)
       
       const teamPerformance = await calculateTeamPerformance(assignmentId, submission.team_id)
       
@@ -97,12 +90,9 @@ export async function POST(request: NextRequest) {
         percentage: teamPerformance.grade,
         averageInvestment: teamPerformance.averageInvestment
       })
-      
-      console.log(`✅ Team ${teamName}: ${teamPerformance.tier} (${teamPerformance.grade}%)`)
     }
     
     // Step 3: Calculate interest for all students
-    console.log(`💰 Calculating interest for all students...`)
     
     // Get course ID first
     const { data: assignment, error: assignmentError } = await supabase
@@ -140,7 +130,6 @@ export async function POST(request: NextRequest) {
     
     for (const student of students) {
       const userName = usersMap[student.user_id]?.name || 'Unknown'
-      console.log(`🎯 Calculating interest for student: ${userName}`)
       
       // Clear existing interest data for this student and assignment
       await supabase
@@ -160,12 +149,8 @@ export async function POST(request: NextRequest) {
           studentName: userName,
           interestEarned: interest
         })
-        
-        console.log(`✅ Student ${userName}: +${interest} interest`)
       }
     }
-    
-    console.log(`🎉 Grading and interest calculation completed!`)
     
     // Calculate statistics
     const statistics = {

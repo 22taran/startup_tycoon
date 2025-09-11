@@ -65,17 +65,12 @@ export const getAllUsers = async () => {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
   
-  console.log('🔍 getAllUsers: Fetching users from database...')
-  
   const { data, error } = await supabase
     .from('users')
     .select('*')
     .order('created_at', { ascending: false })
   
-  console.log('🔍 getAllUsers: Raw data from Supabase:', { data, error })
-  
   if (error) {
-    console.error('❌ getAllUsers: Supabase error:', error)
     throw error
   }
   
@@ -91,7 +86,6 @@ export const getAllUsers = async () => {
     updatedAt: new Date(user.updated_at)
   }))
   
-  console.log('🔍 getAllUsers: Mapped users:', mappedUsers)
   return mappedUsers
 }
 
@@ -119,7 +113,6 @@ export const deleteUser = async (id: string) => {
 
 // Teams
 export const createTeam = async (teamData: Omit<Team, 'id' | 'createdAt' | 'updatedAt'>) => {
-  console.log('🔄 Inserting team into Supabase:', teamData)
   const supabase = getSupabaseClient()
   
   // Map camelCase to snake_case for database
@@ -130,8 +123,6 @@ export const createTeam = async (teamData: Omit<Team, 'id' | 'createdAt' | 'upda
     course_id: teamData.courseId // Map courseId to course_id
   }
   
-  console.log('🔄 Mapped team data for database:', dbTeamData)
-  
   const { data, error } = await supabase
     .from('teams')
     .insert([dbTeamData])
@@ -139,10 +130,8 @@ export const createTeam = async (teamData: Omit<Team, 'id' | 'createdAt' | 'upda
     .single()
   
   if (error) {
-    console.error('❌ Supabase insert error:', error)
     throw error
   }
-  console.log('✅ Team inserted successfully:', data)
   return data
 }
 
@@ -1328,7 +1317,6 @@ export const isAssignmentDistributed = async (assignmentId: string) => {
 
 // Grading Calculation System - Core Startup Tycoon game mechanics
 export const calculateGradesForAssignment = async (assignmentId: string) => {
-  console.log('🎯 Calculating grades for assignment:', assignmentId)
   
   // Get all submissions for this assignment
   const { data: submissions, error: submissionsError } = await getSupabaseClient()
@@ -1343,7 +1331,6 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
     throw new Error('No submissions found for grading')
   }
   
-  console.log(`📊 Found ${submissions.length} submissions to grade`)
   
   // Clear existing grades for this assignment
   const { error: clearError } = await getSupabaseClient()

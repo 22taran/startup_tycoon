@@ -98,7 +98,7 @@ async function calculateAllInterest() {
       .eq('assignment_id', assignment.id);
     
     if (investments && investments.length > 0) {
-      const uniqueStudentIds = [...new Set(investments.map(inv => inv.investor_student_id))];
+      const uniqueStudentIds = Array.from(new Set(investments.map(inv => inv.investor_student_id)));
       console.log(`💰 Found ${uniqueStudentIds.length} students who invested`);
       
       for (const studentId of uniqueStudentIds) {
