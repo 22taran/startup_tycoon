@@ -4,8 +4,7 @@ import { authOptions } from '@/auth.config'
 import { lockTeamsForAssignment } from '@/lib/per-assignment-teams'
 
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ assignmentId: string }> }
+  request: NextRequest
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,7 +17,7 @@ export async function POST(
       return NextResponse.json({ error: 'Admin/Instructor access required' }, { status: 403 })
     }
     
-    const { assignmentId } = await params
+    const { assignmentId } = await request.json()
     
     if (!assignmentId) {
       return NextResponse.json({ error: 'Assignment ID is required' }, { status: 400 })

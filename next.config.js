@@ -5,8 +5,6 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     // Enable modern bundling for better performance
     esmExternals: true,
-    // Enable SWC minification
-    swcMinify: true,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',

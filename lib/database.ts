@@ -5,7 +5,7 @@ import {
 } from '@/types'
 
 // Helper function to get Supabase client with service role key
-const getSupabaseClient = () => {
+export const getSupabaseClient = () => {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -1482,18 +1482,20 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
     // Get all unique students who invested in this assignment
     const { data: investments, error: invError } = await getSupabaseClient()
       .from('assignment_investments')
-      .select('DISTINCT investor_student_id')
+      .select('investor_student_id')
       .eq('assignment_id', assignmentId)
     
     if (!invError && investments) {
-      console.log(`💰 Calculating interest for ${investments.length} students`)
+      // Get unique student IDs
+      const uniqueStudentIds = Array.from(new Set(investments.map(inv => inv.investor_student_id)))
+      console.log(`💰 Calculating interest for ${uniqueStudentIds.length} students`)
       
       // Calculate interest for each student
-      for (const investment of investments) {
+      for (const studentId of uniqueStudentIds) {
         try {
-          await calculateStudentInterest(investment.investor_student_id, assignmentId)
+          await calculateStudentInterest(studentId, assignmentId)
         } catch (error) {
-          console.error(`Error calculating interest for student ${investment.investor_student_id}:`, error)
+          console.error(`Error calculating interest for student ${studentId}:`, error)
         }
       }
       

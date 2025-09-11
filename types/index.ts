@@ -120,6 +120,23 @@ export interface AssignmentEvaluation {
   dueAt: Date
   createdAt: Date
   updatedAt: Date
+  // Additional properties returned by getStudentEvaluations
+  assignment?: {
+    title: string
+    dueDate: string
+  }
+  evaluatedTeam?: {
+    id: string
+    name: string
+    members: string[]
+  }
+  submission?: {
+    id: string
+    primaryLink?: string
+    backupLink?: string
+    status: string
+    submittedAt?: string
+  }
 }
 
 export interface AssignmentInvestment {
@@ -131,6 +148,12 @@ export interface AssignmentInvestment {
   investmentRank?: number // 1st, 2nd, or 3rd choice
   createdAt: Date
   updatedAt: Date
+  // Additional properties returned by getStudentInvestments
+  investedTeam?: {
+    id: string
+    name: string
+    members: string[]
+  }
 }
 
 export interface StudentInterestTracking {

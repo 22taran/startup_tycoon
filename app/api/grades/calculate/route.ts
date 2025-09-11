@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const teamGrades = []
     
     for (const submission of submissions) {
-      console.log(`🎯 Calculating grade for team: ${submission.teams.name}`)
+      console.log(`🎯 Calculating grade for team: ${submission.teams?.[0]?.name || 'Unknown'}`)
       
       const teamPerformance = await calculateTeamPerformance(assignmentId, submission.team_id)
       
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
           submission_id: submission.id,
           average_investment: teamPerformance.averageInvestment,
           grade: teamPerformance.tier,
-          percentage: teamPerformance.percentage,
-          total_investments: teamPerformance.totalInvestments,
+          percentage: teamPerformance.grade,
+          total_investments: 0, // This will be calculated separately if needed
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'assignment_id,team_id'
@@ -70,19 +70,19 @@ export async function POST(request: NextRequest) {
         .select()
       
       if (gradeError) {
-        console.error(`❌ Error saving grade for team ${submission.teams.name}:`, gradeError)
+        console.error(`❌ Error saving grade for team ${submission.teams?.[0]?.name || 'Unknown'}:`, gradeError)
         continue
       }
       
       teamGrades.push({
         teamId: submission.team_id,
-        teamName: submission.teams.name,
+        teamName: submission.teams?.[0]?.name || 'Unknown',
         tier: teamPerformance.tier,
-        percentage: teamPerformance.percentage,
+        percentage: teamPerformance.grade,
         averageInvestment: teamPerformance.averageInvestment
       })
       
-      console.log(`✅ Team ${submission.teams.name}: ${teamPerformance.tier} (${teamPerformance.percentage}%)`)
+      console.log(`✅ Team ${submission.teams?.[0]?.name || 'Unknown'}: ${teamPerformance.tier} (${teamPerformance.grade}%)`)
     }
     
     // Step 3: Calculate interest for all students
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     const studentInterests = []
     
     for (const student of students) {
-      console.log(`🎯 Calculating interest for student: ${student.users.name}`)
+      console.log(`🎯 Calculating interest for student: ${student.users?.[0]?.name || 'Unknown'}`)
       
       const interest = await calculateStudentInterest(student.user_id, assignmentId)
       
@@ -126,17 +126,17 @@ export async function POST(request: NextRequest) {
           })
         
         if (interestError) {
-          console.error(`❌ Error saving interest for student ${student.users.name}:`, interestError)
+          console.error(`❌ Error saving interest for student ${student.users?.[0]?.name || 'Unknown'}:`, interestError)
           continue
         }
         
         studentInterests.push({
           studentId: student.user_id,
-          studentName: student.users.name,
+          studentName: student.users?.[0]?.name || 'Unknown',
           interestEarned: interest
         })
         
-        console.log(`✅ Student ${student.users.name}: +${interest} interest`)
+        console.log(`✅ Student ${student.users?.[0]?.name || 'Unknown'}: +${interest} interest`)
       }
     }
     

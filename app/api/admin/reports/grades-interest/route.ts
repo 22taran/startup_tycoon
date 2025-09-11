@@ -33,10 +33,10 @@ export async function GET(request: NextRequest) {
     
     if (usersError) throw usersError
     
-    const usersMap = (users || []).reduce((acc, user) => {
+    const usersMap = (users || []).reduce((acc: Record<string, any>, user) => {
       acc[user.id] = user
       return acc
-    }, {})
+    }, {} as Record<string, any>)
     
     // Get all grades
     const { data: grades, error: gradesError } = await supabase
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
         const assignmentInvestments = investments?.filter(i => i.assignment_id === assignment.id) || []
         
         // Group interest by student
-        const interestByStudent = assignmentInterest.reduce((acc, record) => {
+        const interestByStudent: Record<string, any> = assignmentInterest.reduce((acc, record) => {
           if (!acc[record.student_id]) {
             acc[record.student_id] = {
               student: usersMap[record.student_id] || { name: 'Unknown', email: 'Unknown' },
@@ -116,20 +116,20 @@ export async function GET(request: NextRequest) {
             id: grade.id,
             teamId: grade.team_id,
             teamName: grade.teams?.name || 'Unknown',
-            teamMembers: grade.teams?.members?.map(memberId => usersMap[memberId]?.name || 'Unknown').join(', ') || 'No members',
+            teamMembers: grade.teams?.members?.map((memberId: string) => usersMap[memberId]?.name || 'Unknown').join(', ') || 'No members',
             score: grade.percentage || 0,
             averageInvestment: grade.average_investment || 0,
             totalInvestments: grade.total_investments || 0,
             performanceTier: grade.grade || 'Unknown',
             createdAt: grade.created_at
           })),
-          interestDistribution: Object.values(interestByStudent).map(studentData => ({
+          interestDistribution: Object.values(interestByStudent).map((studentData: any) => ({
             studentId: studentData.student.id,
             studentName: studentData.student.name,
             studentEmail: studentData.student.email,
             totalInterest: studentData.totalInterest,
             bonusPotential: Math.min(studentData.totalInterest / 100, 0.20) * 100,
-            investments: studentData.records.map(record => ({
+            investments: studentData.records.map((record: any) => ({
               teamId: record.invested_team_id,
               teamName: record.teams?.name || 'Unknown',
               tokensInvested: record.tokens_invested,
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
         }
       }),
       topPerformers: (() => {
-        const allStudentInterest = {}
+        const allStudentInterest: Record<string, any> = {}
         for (const assignment of assignments || []) {
           const assignmentInterest = interestRecords?.filter(i => i.assignment_id === assignment.id) || []
           assignmentInterest.forEach(record => {
@@ -250,7 +250,7 @@ function generateHTMLReport(data: any): string {
         </div>
     </div>
     
-    ${data.assignments.map(assignment => `
+    ${data.assignments.map((assignment: any) => `
         <div class="assignment">
             <h2>📚 ${assignment.title}</h2>
             <p><strong>ID:</strong> ${assignment.id}</p>
@@ -273,7 +273,7 @@ function generateHTMLReport(data: any): string {
                         </tr>
                     </thead>
                     <tbody>
-                        ${assignment.grades.map(grade => `
+                        ${assignment.grades.map((grade: any) => `
                             <tr>
                                 <td>${grade.teamName}</td>
                                 <td>${grade.teamMembers}</td>
@@ -300,14 +300,14 @@ function generateHTMLReport(data: any): string {
                         </tr>
                     </thead>
                     <tbody>
-                        ${assignment.interestDistribution.map(student => `
+                        ${assignment.interestDistribution.map((student: any) => `
                             <tr>
                                 <td>${student.studentName}</td>
                                 <td>${student.studentEmail}</td>
                                 <td>${student.totalInterest.toFixed(2)}</td>
                                 <td>${student.bonusPotential.toFixed(1)}%</td>
                                 <td>
-                                    ${student.investments.map(inv => `
+                                    ${student.investments.map((inv: any) => `
                                         Team ${inv.teamName}: ${inv.tokensInvested} tokens → ${inv.interestEarned} interest (${inv.performanceTier} tier)
                                     `).join('<br>')}
                                 </td>
@@ -326,7 +326,7 @@ function generateHTMLReport(data: any): string {
     
     <h2>🏆 Top Interest Earners</h2>
     <div class="top-performers">
-        ${data.topPerformers.map((performer, index) => `
+        ${data.topPerformers.map((performer: any, index: number) => `
             <div class="performer-card">
                 <h4>#${index + 1} ${performer.student.name}</h4>
                 <p><strong>Email:</strong> ${performer.student.email}</p>

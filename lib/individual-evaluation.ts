@@ -89,14 +89,14 @@ export const distributeEvaluationsToStudents = async (
   for (const student of students) {
     // Get teams that this student is NOT part of
     const studentTeams = submissions.filter(sub => 
-      sub.teams?.members?.includes(student.user_id)
+      sub.teams?.[0]?.members?.includes(student.user_id)
     )
     const otherTeamSubmissions = submissions.filter(sub => 
-      !sub.teams?.members?.includes(student.user_id)
+      !sub.teams?.[0]?.members?.includes(student.user_id)
     )
     
     if (otherTeamSubmissions.length < evaluationsPerStudent) {
-      console.warn(`⚠️ Not enough other teams for student ${student.users?.email}`)
+      console.warn(`⚠️ Not enough other teams for student ${student.users?.[0]?.email}`)
       continue
     }
     
@@ -115,7 +115,7 @@ export const distributeEvaluationsToStudents = async (
       })
     }
     
-    console.log(`📝 Assigned ${selectedSubmissions.length} evaluations to student ${student.users?.email}`)
+    console.log(`📝 Assigned ${selectedSubmissions.length} evaluations to student ${student.users?.[0]?.email}`)
   }
   
   // Insert all evaluation assignments
@@ -238,7 +238,7 @@ export const processStudentInvestment = async (
   // Check if student has already invested in 3 teams
   const { data: existingInvestments, error: investmentsError } = await supabase
     .from('assignment_investments')
-    .select('id')
+    .select('tokens_invested')
     .eq('assignment_id', assignmentId)
     .eq('investor_student_id', studentId)
   
