@@ -29,12 +29,7 @@ export function CTA() {
               <Play className="mr-2 h-5 w-5" />
               Start Playing Now
             </Button>
-            <Button asChild size="lg" variant="outline" className="text-lg px-8 py-6 border-white text-white hover:bg-white hover:text-blue-600">
-              <Link href="/dashboard">
-                View Dashboard
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+            
           </div>
           
           <div className="mt-12 rounded-lg bg-white/10 p-6 backdrop-blur-sm">

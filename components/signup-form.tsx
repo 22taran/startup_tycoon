@@ -55,7 +55,7 @@ export default function SignupForm() {
 
       if (response.ok) {
         // Force a page refresh to update the auth state
-        window.location.href = '/auth/signin?message=Account created successfully';
+        window.location.href = '/?message=Account created successfully';
       } else {
         setError(data.error || 'Signup failed');
       }
@@ -144,7 +144,7 @@ export default function SignupForm() {
         </form>
         <div className="mt-4 text-center text-sm">
           Already have an account?{' '}
-          <a href="/signin" className="text-blue-600 hover:underline">
+          <a href="/" className="text-blue-600 hover:underline">
             Sign in
           </a>
         </div>

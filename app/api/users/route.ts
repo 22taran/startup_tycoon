@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllUsers, createUser } from '@/lib/database'
+import { getAllUsers } from '@/lib/database'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth.config'
+import bcrypt from 'bcryptjs'
+import { createClient } from '@supabase/supabase-js'
+import { v4 as uuidv4 } from 'uuid'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function GET() {
   try {
@@ -39,14 +47,57 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create user (password hashing handled by Supabase Auth)
-    const user = await createUser({
-      email,
-      name,
-      role
-    })
+    // Check if user already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
 
-    return NextResponse.json({ success: true, data: user })
+    if (existingUser) {
+      return NextResponse.json(
+        { success: false, error: 'User already exists with this email' },
+        { status: 400 }
+      )
+    }
+
+    // Hash password using bcrypt (same as signup)
+    const hashedPassword = await bcrypt.hash(password, 12)
+
+    // Create user in database (same pattern as signup)
+    const { data: user, error } = await supabase
+      .from('users')
+      .insert({
+        id: uuidv4(),
+        email,
+        name,
+        password: hashedPassword,
+        role,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating user:', error)
+      return NextResponse.json(
+        { success: false, error: 'Failed to create user' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at
+      }
+    })
   } catch (error) {
     console.error('Error creating user:', error)
     return NextResponse.json(

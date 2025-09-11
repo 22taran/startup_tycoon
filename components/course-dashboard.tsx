@@ -29,6 +29,8 @@ import { InvestmentModal } from './investment-modal'
 import { EvaluationAssignments } from './evaluation-assignments'
 import StudentGradesDisplay from './student-grades-display'
 import { StudentAssignmentKanban } from './student-assignment-kanban'
+import { IndividualEvaluationDashboard } from './individual-evaluation-dashboard'
+import { AssignmentTeamManager } from './assignment-team-manager'
 
 interface CourseDashboardProps {
   courseId: string
@@ -64,6 +66,12 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
   const [grades, setGrades] = useState<Grade[]>([])
   const [investments, setInvestments] = useState<Investment[]>([])
   const [allUsers, setAllUsers] = useState<any[]>([])
+  const [studentTeamMap, setStudentTeamMap] = useState<Map<string, string>>(new Map())
+  const [interestData, setInterestData] = useState<{
+    totalInterest: number
+    bonusPercentage: number
+    assignmentsWithInterest: number
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -81,8 +89,23 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
     fetchCourseData()
   }, [courseId])
 
+  // Update team mappings when assignments change
+  useEffect(() => {
+    if (assignments.length > 0 && currentUserId) {
+      updateStudentTeamMappings()
+    }
+  }, [assignments, currentUserId])
+
+  const updateStudentTeamMappings = async () => {
+    const assignmentIds = assignments.map(a => a.id)
+    const { getStudentAssignmentTeamMap } = await import('@/lib/submission-helpers')
+    const teamMap = await getStudentAssignmentTeamMap(currentUserId, assignmentIds)
+    setStudentTeamMap(teamMap)
+  }
+
   const fetchCourseData = async () => {
     try {
+      console.log('🔄 fetchCourseData called - refreshing data...')
       setLoading(true)
       
       // Fetch course details
@@ -96,22 +119,24 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
       }
 
       // Fetch all data in parallel
-      const [assignmentsRes, submissionsRes, investmentsRes, gradesRes, teamsRes, usersRes] = await Promise.all([
+      const [assignmentsRes, submissionsRes, investmentsRes, gradesRes, teamsRes, usersRes, interestRes] = await Promise.all([
         fetch(`/api/assignments?courseId=${courseId}`),
         fetch(`/api/submissions?courseId=${courseId}`),
         fetch(`/api/investments?courseId=${courseId}`),
         fetch(`/api/grades?courseId=${courseId}`),
         fetch(`/api/teams?courseId=${courseId}`),
-        fetch('/api/users')
+        fetch('/api/users'),
+        fetch(`/api/student-interest?studentId=${currentUserId}`)
       ])
 
-      const [assignmentsData, submissionsData, investmentsData, gradesData, teamsData, usersData] = await Promise.all([
+      const [assignmentsData, submissionsData, investmentsData, gradesData, teamsData, usersData, interestData] = await Promise.all([
         assignmentsRes.json(),
         submissionsRes.json(),
         investmentsRes.json(),
         gradesRes.json(),
         teamsRes.json(),
-        usersRes.json()
+        usersRes.json(),
+        interestRes.json()
       ])
 
       setAssignments(assignmentsData.data || [])
@@ -120,7 +145,19 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
       setGrades(gradesData.data || [])
       setAllUsers(usersData.data || [])
       
-      // Filter teams to show only the ones the current user belongs to
+      // Set interest data
+      if (interestData.success) {
+        setInterestData(interestData.data)
+      }
+      
+      console.log('📊 Data refreshed:', {
+        assignments: (assignmentsData.data || []).length,
+        submissions: (submissionsData.data || []).length,
+        teams: (teamsData.data || []).length
+      })
+      
+      // For per-assignment teams, we'll fetch team info per assignment
+      // For now, keep the existing logic but we'll update the submission checking
       const userTeams = (teamsData.data || []).filter((team: Team) => 
         team.members.includes(currentUserId)
       )
@@ -151,11 +188,15 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
   }
 
   const isAssignmentSubmitted = (assignmentId: string) => {
-    return submissions.some(submission => submission.assignmentId === assignmentId)
+    const { checkStudentSubmissionStatus } = require('@/lib/simple-submission-check')
+    const status = checkStudentSubmissionStatus(assignmentId, currentUserId, submissions, teams)
+    return status.isSubmitted
   }
 
   const getSubmissionForAssignment = (assignmentId: string) => {
-    return submissions.find(submission => submission.assignmentId === assignmentId)
+    const { checkStudentSubmissionStatus } = require('@/lib/simple-submission-check')
+    const status = checkStudentSubmissionStatus(assignmentId, currentUserId, submissions, teams)
+    return status.submission || null
   }
 
   const getPendingEvaluations = () => {
@@ -296,6 +337,37 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Interest</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{interestData?.totalInterest?.toFixed(1) || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Interest earned from investments
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Bonus Potential</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {typeof interestData?.bonusPercentage === 'number'
+                ? (interestData.bonusPercentage * 100).toFixed(1)
+                : '0'}
+              %
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Bonus to final grade (max 20%)
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* My Team Section */}
@@ -367,6 +439,8 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
           <TabsList className="flex w-max min-w-full">
             <TabsTrigger value="pipeline" className="text-xs sm:text-sm whitespace-nowrap">Pipeline</TabsTrigger>
             <TabsTrigger value="assignments" className="text-xs sm:text-sm whitespace-nowrap">Assignments</TabsTrigger>
+            <TabsTrigger value="evaluations" className="text-xs sm:text-sm whitespace-nowrap">My Evaluations</TabsTrigger>
+            <TabsTrigger value="teams" className="text-xs sm:text-sm whitespace-nowrap">Team Management</TabsTrigger>
             <TabsTrigger value="submissions" className="text-xs sm:text-sm whitespace-nowrap">My Submissions</TabsTrigger>
             <TabsTrigger value="pending-investments" className="text-xs sm:text-sm whitespace-nowrap">Pending Investment</TabsTrigger>
             <TabsTrigger value="investments" className="text-xs sm:text-sm whitespace-nowrap">My Investments</TabsTrigger>
@@ -380,7 +454,9 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             submissions={submissions}
             investments={investments}
             grades={grades}
+            teams={teams}
             currentUserEmail={currentUserEmail}
+            currentUserId={currentUserId}
             onAssignmentAction={(assignment: Assignment, action: 'submit' | 'invest' | 'view-grades') => {
               if (action === 'submit') {
                 setSelectedAssignment(assignment)
@@ -441,16 +517,26 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                       Duration: {assignment.startDate ? formatDate(assignment.startDate.toString()) : 'TBD'} to {assignment.dueDate ? formatDate(assignment.dueDate.toString()) : 'TBD'}
                       </div>
                       <div className="flex space-x-2">
-                        {assignment.isActive && !isAssignmentSubmitted(assignment.id) && (
+                        {assignment.isActive && (
                           <Button 
                             size="sm"
+                            variant={isAssignmentSubmitted(assignment.id) ? "outline" : "default"}
                             onClick={() => {
                               setSelectedAssignment(assignment)
                               setShowSubmitModal(true)
                             }}
                           >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Submit Work
+                            {isAssignmentSubmitted(assignment.id) ? (
+                              <>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Submission
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
+                                Submit Work
+                              </>
+                            )}
                           </Button>
                         )}
                         {assignment.isEvaluationActive && (
@@ -476,6 +562,78 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
           </div>
         </TabsContent>
 
+        <TabsContent value="evaluations" className="space-y-4">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Individual Evaluations</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              You have been assigned 5 teams to evaluate for each assignment. Complete your evaluations and investments to earn interest.
+            </p>
+            {assignments.length > 0 ? (
+              <div className="space-y-4">
+                {assignments.map((assignment) => (
+                  <Card key={assignment.id}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                      <CardDescription>
+                        Due: {assignment.dueDate ? formatDate(assignment.dueDate.toString()) : 'TBD'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <IndividualEvaluationDashboard
+                        assignmentId={assignment.id}
+                        currentUserId={currentUserId}
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400">No assignments available for evaluation</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="teams" className="space-y-4">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Team Management</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Form teams for each assignment. You can change teams before the submission deadline.
+            </p>
+            {assignments.length > 0 ? (
+              <div className="space-y-4">
+                {assignments.map((assignment) => (
+                  <Card key={assignment.id}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                      <CardDescription>
+                        Due: {assignment.dueDate ? formatDate(assignment.dueDate.toString()) : 'TBD'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <AssignmentTeamManager
+                        assignmentId={assignment.id}
+                        currentUserId={currentUserId}
+                        userRole="student"
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400">No assignments available for team formation</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
 
         <TabsContent value="submissions" className="space-y-4">
           <div className="grid gap-4">
@@ -582,7 +740,58 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
         <TabsContent value="grades" className="space-y-4">
           <StudentGradesDisplay 
             currentUserEmail={currentUserEmail}
+            currentUserId={currentUserId}
           />
+          
+          {/* Interest Breakdown */}
+          {interestData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Interest Breakdown
+                </CardTitle>
+                <CardDescription>
+                  Your investment performance and interest earnings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {interestData.totalInterest.toFixed(1)}
+                    </div>
+                    <div className="text-sm text-green-700">Total Interest</div>
+                  </div>
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {(interestData.bonusPercentage * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-blue-700">Bonus Potential</div>
+                  </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {interestData.assignmentsWithInterest}
+                    </div>
+                    <div className="text-sm text-purple-700">Assignments</div>
+                  </div>
+                </div>
+                
+                {interestData.totalInterest > 0 && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-semibold mb-2">How Interest Works:</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• <strong>High tier teams:</strong> 20% interest on your investment</li>
+                      <li>• <strong>Median tier teams:</strong> 10% interest on your investment</li>
+                      <li>• <strong>Low tier teams:</strong> 5% interest on your investment</li>
+                      <li>• <strong>Incomplete teams:</strong> 0% interest</li>
+                      <li>• <strong>Bonus cap:</strong> Maximum 20% bonus to final grade</li>
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -595,7 +804,11 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
           assignmentTitle={selectedAssignment.title}
           teamId={teams.length > 0 ? teams[0].id : ''}
           existingSubmission={isAssignmentSubmitted(selectedAssignment.id) ? getSubmissionForAssignment(selectedAssignment.id) : null}
-          onSubmissionAdded={fetchCourseData}
+          onSubmissionAdded={async () => {
+            console.log('🔄 onSubmissionAdded called - refreshing data...')
+            await fetchCourseData()
+            console.log('✅ Data refresh completed')
+          }}
         />
       )}
 

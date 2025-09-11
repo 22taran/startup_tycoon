@@ -107,6 +107,65 @@ export interface Investment {
   updatedAt: Date
 }
 
+// Individual Evaluation Types
+export interface AssignmentEvaluation {
+  id: string
+  assignmentId: string
+  evaluatorStudentId: string
+  evaluatedTeamId: string
+  submissionId: string
+  evaluationStatus: 'assigned' | 'completed' | 'late' | 'missed'
+  assignedAt: Date
+  completedAt?: Date
+  dueAt: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface AssignmentInvestment {
+  id: string
+  assignmentId: string
+  investorStudentId: string
+  investedTeamId: string
+  tokensInvested: number // 0-50 tokens
+  investmentRank?: number // 1st, 2nd, or 3rd choice
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface StudentInterestTracking {
+  id: string
+  studentId: string
+  assignmentId: string
+  investedTeamId: string
+  tokensInvested: number
+  teamPerformanceTier: 'high' | 'median' | 'low' | 'incomplete'
+  interestEarned: number
+  createdAt: Date
+}
+
+export interface AssignmentTeamMembership {
+  id: string
+  assignmentId: string
+  studentId: string
+  teamId: string
+  joinedAt: Date
+  isLocked: boolean
+  lockedAt?: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface AssignmentTeamChangeHistory {
+  id: string
+  assignmentId: string
+  studentId: string
+  fromTeamId?: string
+  toTeamId: string
+  changedAt: Date
+  changeType: 'student_change' | 'admin_override'
+}
+
 // Grade Types
 export interface Grade {
   id: string

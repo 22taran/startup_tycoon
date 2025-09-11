@@ -13,7 +13,7 @@ const getSupabaseClient = () => {
 }
 
 // Helper function to get simple Supabase client (no cookies)
-const getSimpleSupabaseClient = () => {
+export const getSimpleSupabaseClient = () => {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -1317,7 +1317,7 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
 export const isAssignmentDistributed = async (assignmentId: string) => {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
-    .from('evaluations')
+    .from('assignment_evaluations')
     .select('id')
     .eq('assignment_id', assignmentId)
     .limit(1)
@@ -1355,33 +1355,42 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
   
   const grades = []
   
-  // Get all investments for all submissions in one query (fixes N+1 problem)
-  const submissionIds = submissions.map(s => s.id)
+  // Get all investments for this assignment from the new assignment_investments table
   const { data: allInvestments, error: investmentsError } = await getSupabaseClient()
-    .from('investments')
-    .select('submission_id, amount, is_incomplete')
-    .in('submission_id', submissionIds)
+    .from('assignment_investments')
+    .select(`
+      invested_team_id,
+      tokens_invested,
+      teams!inner(id, name)
+    `)
+    .eq('assignment_id', assignmentId)
   
   if (investmentsError) throw investmentsError
   
-  // Group investments by submission_id for efficient lookup
-  const investmentsBySubmission = (allInvestments || []).reduce((acc, inv) => {
-    if (!acc[inv.submission_id]) {
-      acc[inv.submission_id] = { complete: [], incomplete: [] }
+  console.log(`💰 Found ${allInvestments?.length || 0} investments for assignment ${assignmentId}`)
+  console.log('📊 Investment data:', allInvestments)
+  
+  // Group investments by team_id for efficient lookup
+  const investmentsByTeam = (allInvestments || []).reduce((acc, inv) => {
+    const teamId = inv.invested_team_id
+    if (!acc[teamId]) {
+      acc[teamId] = []
     }
-    if (inv.is_incomplete) {
-      acc[inv.submission_id].incomplete.push(inv)
-    } else {
-      acc[inv.submission_id].complete.push(inv)
-    }
+    acc[teamId].push({
+      amount: inv.tokens_invested,
+      is_incomplete: false // assignment_investments are always complete
+    })
     return acc
-  }, {} as Record<string, { complete: typeof allInvestments, incomplete: typeof allInvestments }>)
+  }, {} as Record<string, Array<{ amount: number, is_incomplete: boolean }>>)
+  
+  console.log('🏆 Investments grouped by team:', investmentsByTeam)
   
   // Calculate grades for each submission
   for (const submission of submissions) {
-    const submissionInvestments = investmentsBySubmission[submission.id] || { complete: [], incomplete: [] }
-    const investments = submissionInvestments.complete
-    const incompleteInvestments = submissionInvestments.incomplete
+    const teamId = submission.team_id
+    const teamInvestments = investmentsByTeam[teamId] || []
+    const investments = teamInvestments.filter(inv => !inv.is_incomplete)
+    const incompleteInvestments = teamInvestments.filter(inv => inv.is_incomplete)
     
     if (investments.length === 0) {
       // No investments = Incomplete grade
@@ -1465,6 +1474,34 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
   if (insertError) throw insertError
   
   console.log(`✅ Created ${createdGrades?.length || 0} grades`)
+  
+  // Calculate interest for all students who invested in this assignment
+  try {
+    const { calculateStudentInterest } = await import('@/lib/individual-evaluation')
+    
+    // Get all unique students who invested in this assignment
+    const { data: investments, error: invError } = await getSupabaseClient()
+      .from('assignment_investments')
+      .select('DISTINCT investor_student_id')
+      .eq('assignment_id', assignmentId)
+    
+    if (!invError && investments) {
+      console.log(`💰 Calculating interest for ${investments.length} students`)
+      
+      // Calculate interest for each student
+      for (const investment of investments) {
+        try {
+          await calculateStudentInterest(investment.investor_student_id, assignmentId)
+        } catch (error) {
+          console.error(`Error calculating interest for student ${investment.investor_student_id}:`, error)
+        }
+      }
+      
+      console.log(`✅ Interest calculation completed for assignment ${assignmentId}`)
+    }
+  } catch (error) {
+    console.error('Error calculating interest:', error)
+  }
   
   return createdGrades || []
 }

@@ -197,9 +197,8 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
         setLoginStep('redirecting')
         setMessage('Sign in successful! Redirecting...')
         
-        // Use router.replace for faster navigation
-        router.replace('/dashboard')
-        onClose()
+        // Force a page refresh to ensure session is updated
+        window.location.href = '/dashboard'
       }
     } catch (error: any) {
       setMessage('An error occurred. Please try again.')

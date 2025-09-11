@@ -6,7 +6,7 @@ export default async function CoursesPage() {
   const session = await auth()
   
   if (!session?.user) {
-    redirect('/signin')
+    redirect('/')
   }
 
   return (

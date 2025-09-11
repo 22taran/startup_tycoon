@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { 
   Users, 
   FileText, 
@@ -17,6 +16,7 @@ import {
   Clock
 } from 'lucide-react'
 import { CourseManagement } from './course-management'
+import { UserManagement } from './user-management'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -129,90 +129,18 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Course Management</h2>
                 <p className="text-gray-600 dark:text-gray-300">Create and manage your courses</p>
-              </div>
+          </div>
               <Button onClick={() => setShowCreateCourseModal(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Course
               </Button>
-            </div>
+        </div>
             <CourseManagement currentUserEmail={currentUserEmail} />
       </div>
     )
 
       case 'users':
-  return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h2>
-                <p className="text-gray-600 dark:text-gray-300">Manage all users, roles, and permissions</p>
-              </div>
-              <Button onClick={() => {/* TODO: Add invite user functionality */}}>
-                <Plus className="h-4 w-4 mr-2" />
-                Invite User
-              </Button>
-      </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Users className="h-5 w-5 mr-2" />
-                    All Users
-                  </CardTitle>
-                  <CardDescription>Manage user accounts and roles</CardDescription>
-          </CardHeader>
-          <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center py-8">
-                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-2">User Management</p>
-                      <p className="text-sm text-gray-400">Coming soon - manage all platform users</p>
-                    </div>
-                  </div>
-          </CardContent>
-        </Card>
-
-            <Card>
-              <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Settings className="h-5 w-5 mr-2" />
-                    Roles & Permissions
-                  </CardTitle>
-                  <CardDescription>Configure user roles and access levels</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                    <div className="text-center py-8">
-                      <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-2">Role Management</p>
-                      <p className="text-sm text-gray-400">Coming soon - configure roles and permissions</p>
-                    </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="h-5 w-5 mr-2" />
-                    User Analytics
-                  </CardTitle>
-                  <CardDescription>View user activity and engagement</CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center py-8">
-                      <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-2">User Analytics</p>
-                      <p className="text-sm text-gray-400">Coming soon - user engagement metrics</p>
-                    </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          </div>
-        )
+        return <UserManagement currentUserEmail={currentUserEmail} />
       
       case 'settings':
         return (
@@ -243,6 +171,8 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
                 </div>
             </CardContent>
           </Card>
+
+          
 
           <Card>
             <CardHeader>

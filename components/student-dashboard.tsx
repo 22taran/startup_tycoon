@@ -51,10 +51,31 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
   const [showInvestmentModal, setShowInvestmentModal] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [allUsers, setAllUsers] = useState<any[]>([])
+  const [studentTeamMap, setStudentTeamMap] = useState<Map<string, string>>(new Map())
+  const [interestData, setInterestData] = useState<{
+    totalInterest: number
+    bonusPercentage: number
+    assignmentsWithInterest: number
+  } | null>(null)
 
   useEffect(() => {
     fetchDashboardData()
+    fetchInterestData()
   }, [])
+
+  // Update team mappings when assignments change
+  useEffect(() => {
+    if (assignments.length > 0 && currentUserId) {
+      updateStudentTeamMappings()
+    }
+  }, [assignments, currentUserId])
+
+  const updateStudentTeamMappings = async () => {
+    const assignmentIds = assignments.map(a => a.id)
+    const { getStudentAssignmentTeamMap } = await import('@/lib/submission-helpers')
+    const teamMap = await getStudentAssignmentTeamMap(currentUserId, assignmentIds)
+    setStudentTeamMap(teamMap)
+  }
 
   // Helper function to convert user IDs to emails
   const getUserEmails = (userIds: string[]) => {
@@ -102,6 +123,23 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
     }
   }
 
+  const fetchInterestData = async () => {
+    try {
+      const response = await fetch(`/api/student-interest?studentId=${currentUserId}`)
+      const data = await response.json()
+      if (data.success) {
+        setInterestData(data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching interest data:', error)
+    }
+  }
+
+  // Refresh interest data when grades change or when component loads
+  useEffect(() => {
+    fetchInterestData()
+  }, [grades, currentUserId])
+
   const activeAssignments = assignments?.filter(a => a.isActive) || []
   const pendingEvaluations = investments?.filter(i => !i.isIncomplete)?.length || 0
   const totalInvestments = investments?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0
@@ -109,24 +147,16 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
 
   // Helper function to check if an assignment has been submitted by the current user's team
   const isAssignmentSubmitted = (assignmentId: string) => {
-    if (teams.length === 0) return false
-    
-    return submissions?.some(submission => 
-      submission.assignmentId === assignmentId && 
-      submission.status === 'submitted' &&
-      submission.teamId === teams[0].id // Check if submission is from current user's team
-    ) || false
+    const { checkStudentSubmissionStatus } = require('@/lib/simple-submission-check')
+    const status = checkStudentSubmissionStatus(assignmentId, currentUserId, submissions, teams)
+    return status.isSubmitted
   }
 
   // Helper function to get submission for an assignment from the current user's team
   const getSubmissionForAssignment = (assignmentId: string) => {
-    if (teams.length === 0) return null
-    
-    return submissions?.find(submission => 
-      submission.assignmentId === assignmentId && 
-      submission.status === 'submitted' &&
-      submission.teamId === teams[0].id // Check if submission is from current user's team
-    )
+    const { checkStudentSubmissionStatus } = require('@/lib/simple-submission-check')
+    const status = checkStudentSubmissionStatus(assignmentId, currentUserId, submissions, teams)
+    return status.submission || null
   }
 
   if (loading) {
@@ -218,6 +248,37 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
             <div className="text-2xl font-bold">{averageGrade?.toFixed(0) || 0}%</div>
             <p className="text-xs text-muted-foreground">
               Your team's performance
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Interest</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{interestData?.totalInterest?.toFixed(1) || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Interest earned from investments
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Bonus Potential</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {interestData?.bonusPercentage !== undefined
+                ? (interestData.bonusPercentage * 100).toFixed(1)
+                : "0.0"
+              }%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Bonus to final grade (max 20%)
             </p>
           </CardContent>
         </Card>
@@ -566,7 +627,57 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
 
         {/* Grades Tab */}
         <TabsContent value="grades" className="space-y-6">
-          <StudentGradesDisplay currentUserEmail={currentUserEmail} />
+          <StudentGradesDisplay currentUserEmail={currentUserEmail} currentUserId={currentUserId} />
+          
+          {/* Interest Breakdown */}
+          {interestData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Interest Breakdown
+                </CardTitle>
+                <CardDescription>
+                  Your investment performance and interest earnings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {interestData.totalInterest.toFixed(1)}
+                    </div>
+                    <div className="text-sm text-green-700">Total Interest</div>
+                  </div>
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {(interestData.bonusPercentage * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-blue-700">Bonus Potential</div>
+                  </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {interestData.assignmentsWithInterest}
+                    </div>
+                    <div className="text-sm text-purple-700">Assignments</div>
+                  </div>
+                </div>
+                
+                {interestData.totalInterest > 0 && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-semibold mb-2">How Interest Works:</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• <strong>High tier teams:</strong> 20% interest on your investment</li>
+                      <li>• <strong>Median tier teams:</strong> 10% interest on your investment</li>
+                      <li>• <strong>Low tier teams:</strong> 5% interest on your investment</li>
+                      <li>• <strong>Incomplete teams:</strong> 0% interest</li>
+                      <li>• <strong>Bonus cap:</strong> Maximum 20% bonus to final grade</li>
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 

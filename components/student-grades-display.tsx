@@ -30,16 +30,17 @@ interface Grade {
 
 interface StudentGradesDisplayProps {
   currentUserEmail: string
+  currentUserId?: string
 }
 
-export default function StudentGradesDisplay({ currentUserEmail }: StudentGradesDisplayProps) {
+export default function StudentGradesDisplay({ currentUserEmail, currentUserId }: StudentGradesDisplayProps) {
   const [grades, setGrades] = useState<Grade[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchGrades()
-  }, [currentUserEmail])
+  }, [currentUserEmail, currentUserId])
 
   const fetchGrades = async () => {
     try {
@@ -50,9 +51,14 @@ export default function StudentGradesDisplay({ currentUserEmail }: StudentGrades
       const data = await response.json()
       
       if (data.success) {
+        if (!currentUserId) {
+          setGrades([])
+          return
+        }
+        
         // Filter grades for the current user's team
         const userGrades = data.data.filter((grade: Grade) => 
-          grade.team.members.includes(currentUserEmail)
+          grade.team && grade.team.members && grade.team.members.includes(currentUserId)
         )
         setGrades(userGrades)
       } else {
@@ -97,7 +103,7 @@ export default function StudentGradesDisplay({ currentUserEmail }: StudentGrades
 
   useEffect(() => {
     fetchGrades()
-  }, [currentUserEmail])
+  }, [currentUserEmail, currentUserId])
 
   if (loading) {
     return (

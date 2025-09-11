@@ -118,11 +118,17 @@ export function StudentDeadlineDisplay({
   }
 
   const getSubmissionStatus = (assignment: Assignment) => {
-    const userSubmission = submissions.find(s => 
-      s.assignmentId === assignment.id && 
-      s.teamId && // Assuming teamId is available
-      s.status === 'submitted'
+    // Find the team this student belongs to
+    const studentTeam = teams.find(team => 
+      team.members && team.members.includes(currentUserEmail)
     )
+    
+    // Check if THIS student's team has submitted
+    const userSubmission = studentTeam ? submissions.find(s => 
+      s.assignmentId === assignment.id && 
+      s.teamId === studentTeam.id &&
+      s.status === 'submitted'
+    ) : null
     
     return {
       hasSubmitted: !!userSubmission,
@@ -340,9 +346,14 @@ export function StudentDeadlineDisplay({
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {(() => {
+                  // Find the team this student belongs to
+                  const studentTeam = teams.find(team => 
+                    team.members && team.members.includes(currentUserEmail)
+                  )
+                  
                   // Filter submissions to only show those from the current user's team
-                  const userTeamSubmissions = teams.length > 0 
-                    ? submissions.filter(s => s.status === 'submitted' && s.teamId === teams[0].id)
+                  const userTeamSubmissions = studentTeam 
+                    ? submissions.filter(s => s.status === 'submitted' && s.teamId === studentTeam.id)
                     : []
                   return userTeamSubmissions.length
                 })()}

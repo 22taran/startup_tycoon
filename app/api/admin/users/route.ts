@@ -53,11 +53,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { action, email, name } = body
+    const { action, userId, role } = body
 
-    if (!action || !email) {
+    if (!action || !userId) {
       return NextResponse.json(
-        { success: false, error: 'Action and email are required' },
+        { success: false, error: 'Action and userId are required' },
         { status: 400 }
       )
     }
@@ -65,30 +65,22 @@ export async function POST(request: NextRequest) {
     let result = false
 
     switch (action) {
-      case 'add-admin':
-        // Find user by email and update role to admin
-        const users = await getAllUsers()
-        const user = users.find(u => u.email === email)
-        if (!user) {
+      case 'update-role':
+        if (!role) {
           return NextResponse.json(
-            { success: false, error: 'User not found' },
-            { status: 404 }
+            { success: false, error: 'Role is required for update-role action' },
+            { status: 400 }
           )
         }
-        result = await updateUserRole(user.id, 'admin')
+        result = await updateUserRole(userId, role)
+        break
+      
+      case 'add-admin':
+        result = await updateUserRole(userId, 'admin')
         break
       
       case 'remove-admin':
-        // Find user by email and update role to student
-        const allUsers = await getAllUsers()
-        const targetUser = allUsers.find(u => u.email === email)
-        if (!targetUser) {
-          return NextResponse.json(
-            { success: false, error: 'User not found' },
-            { status: 404 }
-          )
-        }
-        result = await updateUserRole(targetUser.id, 'student')
+        result = await updateUserRole(userId, 'student')
         break
       
       default:

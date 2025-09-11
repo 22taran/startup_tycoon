@@ -6,15 +6,17 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request })
   const { pathname } = request.nextUrl
 
-  // Allow access to auth pages (signin and signup)
-  if (pathname.startsWith('/signin') || pathname.startsWith('/signup')) {
+  // Allow access to landing page (/) and public routes
+  if (pathname === '/' || pathname.startsWith('/api/auth')) {
     return NextResponse.next()
   }
 
-  // Require authentication for dashboard and admin pages
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
+  // Require authentication for protected pages
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || 
+      pathname.startsWith('/courses') || pathname.startsWith('/profile') || 
+      pathname.startsWith('/settings')) {
     if (!token) {
-      return NextResponse.redirect(new URL('/signin', request.url))
+      return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
