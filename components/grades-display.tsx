@@ -178,7 +178,7 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{statistics.totalTeams}</div>
+              <div className="text-2xl font-bold">{statistics.totalTeams || 0}</div>
             </CardContent>
           </Card>
           
@@ -188,7 +188,7 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{statistics.highGrades}</div>
+              <div className="text-2xl font-bold text-green-600">{statistics.highGrades || 0}</div>
             </CardContent>
           </Card>
           
@@ -198,7 +198,7 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
               <TrendingUp className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{statistics.averageInvestment.toFixed(1)}</div>
+              <div className="text-2xl font-bold">{(statistics.averageInvestment || 0).toFixed(1)}</div>
             </CardContent>
           </Card>
           
@@ -208,7 +208,7 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
               <Target className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{statistics.totalInvestments}</div>
+              <div className="text-2xl font-bold">{statistics.totalInvestments || 0}</div>
             </CardContent>
           </Card>
         </div>
@@ -229,9 +229,9 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">{grade.team.name}</CardTitle>
+                    <CardTitle className="text-lg">{grade.team?.name || 'Unknown Team'}</CardTitle>
                     <CardDescription>
-                      {grade.team.members.join(', ')}
+                      {grade.team?.members?.join(', ') || 'No members found'}
                     </CardDescription>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -240,9 +240,9 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
                       <span className="ml-1 capitalize">{grade.grade}</span>
                     </Badge>
                     <div className="text-right">
-                      <div className="text-2xl font-bold">{grade.percentage}%</div>
+                      <div className="text-2xl font-bold">{grade.percentage || 0}%</div>
                       <div className="text-sm text-gray-600">
-                        {grade.averageInvestment.toFixed(1)} avg investment
+                        {(grade.averageInvestment || 0).toFixed(1)} avg investment
                       </div>
                     </div>
                   </div>
@@ -252,16 +252,16 @@ export default function GradesDisplay({ assignmentId, showCalculateButton = true
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Investment Average</span>
-                    <span>{grade.averageInvestment.toFixed(1)} tokens</span>
+                    <span>{(grade.averageInvestment || 0).toFixed(1)} tokens</span>
                   </div>
                   <Progress 
-                    value={grade.averageInvestment} 
+                    value={grade.averageInvestment || 0} 
                     max={50} 
                     className="h-2"
                   />
                   <div className="flex justify-between text-sm text-gray-600">
-                    <span>Total Investments: {grade.totalInvestments}</span>
-                    <span>Grade: {grade.percentage}%</span>
+                    <span>Total Investments: {grade.totalInvestments || 0}</span>
+                    <span>Grade: {grade.percentage || 0}%</span>
                   </div>
                 </div>
               </CardContent>

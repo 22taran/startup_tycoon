@@ -457,6 +457,8 @@ export const calculateStudentInterest = async (studentId: string, assignmentId: 
         tokens_invested: investment.tokensInvested,
         team_performance_tier: teamPerformance.tier,
         interest_earned: interest
+      }, {
+        onConflict: 'student_id,assignment_id,invested_team_id'
       })
   }
   

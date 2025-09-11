@@ -1477,8 +1477,6 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
   
   // Calculate interest for all students who invested in this assignment
   try {
-    const { calculateStudentInterest } = await import('@/lib/individual-evaluation')
-    
     // Get all unique students who invested in this assignment
     const { data: investments, error: invError } = await getSupabaseClient()
       .from('assignment_investments')
@@ -1490,10 +1488,10 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
       const uniqueStudentIds = Array.from(new Set(investments.map(inv => inv.investor_student_id)))
       console.log(`💰 Calculating interest for ${uniqueStudentIds.length} students`)
       
-      // Calculate interest for each student
+      // Calculate interest for each student using the direct function
       for (const studentId of uniqueStudentIds) {
         try {
-          await calculateStudentInterest(studentId, assignmentId)
+          await calculateStudentInterestDirect(studentId, assignmentId)
         } catch (error) {
           console.error(`Error calculating interest for student ${studentId}:`, error)
         }
@@ -1507,6 +1505,79 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
   
   return createdGrades || []
 }
+
+// Direct interest calculation function (avoiding dynamic import issues)
+const calculateStudentInterestDirect = async (studentId: string, assignmentId: string) => {
+  const supabase = getSupabaseClient()
+  
+  // Get student investments
+  const { data: investments, error: invError } = await supabase
+    .from('assignment_investments')
+    .select('invested_team_id, tokens_invested')
+    .eq('investor_student_id', studentId)
+    .eq('assignment_id', assignmentId);
+  
+  if (invError) throw invError;
+  
+  let totalInterest = 0;
+  
+  for (const investment of investments || []) {
+    // Get team performance (grades)
+    const { data: grade, error: gradeError } = await supabase
+      .from('grades')
+      .select('grade, percentage')
+      .eq('assignment_id', assignmentId)
+      .eq('team_id', investment.invested_team_id)
+      .single();
+    
+    if (gradeError) {
+      console.warn(`⚠️ No grade found for team ${investment.invested_team_id}:`, gradeError.message);
+      continue;
+    }
+    
+    // Calculate interest based on team performance
+    let interestRate = 0;
+    switch (grade.grade) {
+      case 'high':
+        interestRate = 0.2; // 20% interest
+        break;
+      case 'median':
+        interestRate = 0.1; // 10% interest
+        break;
+      case 'low':
+        interestRate = 0.05; // 5% interest
+        break;
+      case 'incomplete':
+        interestRate = 0; // No interest
+        break;
+    }
+    
+    const interest = investment.tokens_invested * interestRate;
+    totalInterest += interest;
+    
+    // Clear existing interest for this student/assignment/team combination first
+    await supabase
+      .from('student_interest_tracking')
+      .delete()
+      .eq('student_id', studentId)
+      .eq('assignment_id', assignmentId)
+      .eq('invested_team_id', investment.invested_team_id);
+    
+    // Store interest earned
+    await supabase
+      .from('student_interest_tracking')
+      .insert({
+        student_id: studentId,
+        assignment_id: assignmentId,
+        invested_team_id: investment.invested_team_id,
+        tokens_invested: investment.tokens_invested,
+        team_performance_tier: grade.grade,
+        interest_earned: interest
+      });
+  }
+  
+  return totalInterest;
+};
 
 // Get grades for a specific assignment
 export const getGradesByAssignment = async (assignmentId: string) => {

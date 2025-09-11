@@ -34,8 +34,7 @@ export async function POST(request: NextRequest) {
       .from('submissions')
       .select(`
         id,
-        team_id,
-        teams!inner(id, name)
+        team_id
       `)
       .eq('assignment_id', assignmentId)
       .eq('status', 'submitted')
@@ -44,11 +43,28 @@ export async function POST(request: NextRequest) {
     
     console.log(`📊 Found ${submissions.length} team submissions`)
     
+    // Get team data separately
+    const teamIds = [...new Set(submissions.map(s => s.team_id))]
+    const { data: teams, error: teamsError } = await supabase
+      .from('teams')
+      .select('id, name')
+      .in('id', teamIds)
+    
+    if (teamsError) throw teamsError
+    
+    const teamsMap = (teams || []).reduce((acc, team) => {
+      acc[team.id] = team
+      return acc
+    }, {} as Record<string, any>)
+    
+    console.log('📊 Teams map:', teamsMap)
+    
     // Step 2: Calculate grades for each team
     const teamGrades = []
     
     for (const submission of submissions) {
-      console.log(`🎯 Calculating grade for team: ${submission.teams?.[0]?.name || 'Unknown'}`)
+      const teamName = teamsMap[submission.team_id]?.name || 'Unknown'
+      console.log(`🎯 Calculating grade for team: ${teamName}`)
       
       const teamPerformance = await calculateTeamPerformance(assignmentId, submission.team_id)
       
@@ -70,83 +86,104 @@ export async function POST(request: NextRequest) {
         .select()
       
       if (gradeError) {
-        console.error(`❌ Error saving grade for team ${submission.teams?.[0]?.name || 'Unknown'}:`, gradeError)
+        console.error(`❌ Error saving grade for team ${teamName}:`, gradeError)
         continue
       }
       
       teamGrades.push({
         teamId: submission.team_id,
-        teamName: submission.teams?.[0]?.name || 'Unknown',
+        teamName: teamName,
         tier: teamPerformance.tier,
         percentage: teamPerformance.grade,
         averageInvestment: teamPerformance.averageInvestment
       })
       
-      console.log(`✅ Team ${submission.teams?.[0]?.name || 'Unknown'}: ${teamPerformance.tier} (${teamPerformance.grade}%)`)
+      console.log(`✅ Team ${teamName}: ${teamPerformance.tier} (${teamPerformance.grade}%)`)
     }
     
     // Step 3: Calculate interest for all students
     console.log(`💰 Calculating interest for all students...`)
     
+    // Get course ID first
+    const { data: assignment, error: assignmentError } = await supabase
+      .from('assignments')
+      .select('course_id')
+      .eq('id', assignmentId)
+      .single()
+    
+    if (assignmentError) throw assignmentError
+    
     const { data: students, error: studentsError } = await supabase
       .from('course_enrollments')
-      .select(`
-        user_id,
-        users!inner(id, name, email)
-      `)
-      .eq('course_id', (await supabase
-        .from('assignments')
-        .select('course_id')
-        .eq('id', assignmentId)
-        .single()
-      ).data?.course_id)
+      .select('user_id')
+      .eq('course_id', assignment.course_id)
       .eq('role', 'student')
       .eq('status', 'active')
     
     if (studentsError) throw studentsError
     
+    // Get user data separately
+    const userIds = students?.map(s => s.user_id) || []
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .in('id', userIds)
+    
+    if (usersError) throw usersError
+    
+    const usersMap = (users || []).reduce((acc, user) => {
+      acc[user.id] = user
+      return acc
+    }, {} as Record<string, any>)
+    
     const studentInterests = []
     
     for (const student of students) {
-      console.log(`🎯 Calculating interest for student: ${student.users?.[0]?.name || 'Unknown'}`)
+      const userName = usersMap[student.user_id]?.name || 'Unknown'
+      console.log(`🎯 Calculating interest for student: ${userName}`)
+      
+      // Clear existing interest data for this student and assignment
+      await supabase
+        .from('student_interest_tracking')
+        .delete()
+        .eq('student_id', student.user_id)
+        .eq('assignment_id', assignmentId)
       
       const interest = await calculateStudentInterest(student.user_id, assignmentId)
       
       if (interest > 0) {
-        // Store interest in the database
-        const { error: interestError } = await supabase
-          .from('student_interest_tracking')
-          .upsert({
-            student_id: student.user_id,
-            assignment_id: assignmentId,
-            interest_earned: interest,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'student_id,assignment_id'
-          })
-        
-        if (interestError) {
-          console.error(`❌ Error saving interest for student ${student.users?.[0]?.name || 'Unknown'}:`, interestError)
-          continue
-        }
+        // Note: calculateStudentInterest already stores the interest in the database
+        // so we don't need to store it again here
         
         studentInterests.push({
           studentId: student.user_id,
-          studentName: student.users?.[0]?.name || 'Unknown',
+          studentName: userName,
           interestEarned: interest
         })
         
-        console.log(`✅ Student ${student.users?.[0]?.name || 'Unknown'}: +${interest} interest`)
+        console.log(`✅ Student ${userName}: +${interest} interest`)
       }
     }
     
     console.log(`🎉 Grading and interest calculation completed!`)
     
+    // Calculate statistics
+    const statistics = {
+      totalTeams: teamGrades.length,
+      highGrades: teamGrades.filter(g => g.tier === 'high').length,
+      medianGrades: teamGrades.filter(g => g.tier === 'median').length,
+      lowGrades: teamGrades.filter(g => g.tier === 'low').length,
+      incompleteGrades: teamGrades.filter(g => g.tier === 'incomplete').length,
+      averageInvestment: teamGrades.length > 0 ? teamGrades.reduce((sum, g) => sum + g.averageInvestment, 0) / teamGrades.length : 0,
+      totalInvestments: teamGrades.reduce((sum, g) => sum + g.averageInvestment, 0)
+    }
+    
     return NextResponse.json({
       success: true,
       message: 'Grading and interest calculation completed successfully',
       data: {
-        teamGrades,
+        grades: teamGrades,
+        statistics: statistics,
         studentInterests,
         summary: {
           totalTeams: teamGrades.length,
