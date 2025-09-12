@@ -141,9 +141,9 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
 
       case 'users':
         return <UserManagement currentUserEmail={currentUserEmail} />
-      
+
       case 'settings':
-        return (
+  return (
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-6">
             <div>
@@ -172,7 +172,7 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
             </CardContent>
           </Card>
 
-          
+
 
           <Card>
             <CardHeader>
