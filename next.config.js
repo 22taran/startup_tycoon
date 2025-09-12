@@ -3,8 +3,6 @@
 const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    // Enable modern bundling for better performance
-    esmExternals: true,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',

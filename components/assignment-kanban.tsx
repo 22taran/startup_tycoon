@@ -114,7 +114,7 @@ export function AssignmentKanban({
       isActive: a.isActive,
       isEvaluationActive: a.isEvaluationActive
     })))
-    setLastRefresh(new Date())
+    // Remove setLastRefresh to prevent infinite loops
   }, [assignments, submissions, investments, teams, grades])
 
   // Determine assignment stage based on dates and status

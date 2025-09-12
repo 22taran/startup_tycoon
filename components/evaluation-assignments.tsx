@@ -109,7 +109,7 @@ export function EvaluationAssignments({ currentUserEmail, onDataRefresh }: Evalu
               }))
               .map((assignment: any) => JSON.stringify(assignment))
           )
-        ).map((assignmentStr: string) => JSON.parse(assignmentStr))
+        ).map((assignmentStr: unknown) => JSON.parse(assignmentStr as string))
         
         setAssignments(uniqueAssignments)
         console.log('📋 Assignments loaded:', uniqueAssignments)

@@ -639,8 +639,8 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
                   <div className="space-y-3">
                     {course.enrollments
                       .filter((enrollment: any) => enrollment.role === 'student')
-                      .map((enrollment: any) => (
-                        <div key={enrollment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      .map((enrollment: any, index: number) => (
+                        <div key={enrollment.id || `enrollment-${index}-${enrollment.user?.email || 'unknown'}`} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                               <span className="text-sm font-medium text-blue-600 dark:text-blue-300">
