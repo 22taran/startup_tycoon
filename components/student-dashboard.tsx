@@ -77,6 +77,43 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
     setStudentTeamMap(teamMap)
   }
 
+  // Check if team editing should be allowed
+  // Allow editing if:
+  // 1. Student has a team, AND
+  // 2. Either assignment is not yet submitted OR assignment is completed with grades
+  const canEditTeam = useMemo(() => {
+    if (teams.length === 0) return false
+    
+    return assignments.some(assignment => {
+      // Check if this assignment has been submitted by the student's team
+      const teamSubmission = submissions.find(sub => 
+        sub.assignmentId === assignment.id && 
+        sub.teamId === teams[0].id && 
+        sub.status === 'submitted'
+      )
+      
+      // If not submitted yet, allow editing
+      if (!teamSubmission) {
+        return true
+      }
+      
+      // If submitted, only allow editing if assignment is completed (has grades)
+      const assignmentGrades = grades.filter(g => g.assignmentId === assignment.id)
+      if (assignmentGrades.length > 0) {
+        return true
+      }
+      
+      // Check if evaluation phase has ended
+      const now = new Date()
+      const evaluationDueDate = assignment.evaluationDueDate ? new Date(assignment.evaluationDueDate) : null
+      if (evaluationDueDate && now > evaluationDueDate && !assignment.isEvaluationActive) {
+        return true
+      }
+      
+      return false
+    })
+  }, [assignments, grades, submissions, teams])
+
   // Helper function to convert user IDs to emails
   const getUserEmails = (userIds: string[]) => {
     return userIds.map(id => {
@@ -708,6 +745,10 @@ export function StudentDashboard({ currentUserEmail, currentUserId }: StudentDas
           open={showEditTeamModal}
           onOpenChange={setShowEditTeamModal}
           teamName={selectedTeam.name}
+          allowEditing={canEditTeam}
+          teamData={selectedTeam}
+          currentUserEmail={currentUserEmail}
+          onTeamUpdated={fetchDashboardData}
         />
       )}
 
