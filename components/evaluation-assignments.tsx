@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Clock, 
   CheckCircle, 
@@ -13,7 +14,8 @@ import {
   ExternalLink,
   Coins,
   Users,
-  Calendar
+  Calendar,
+  Filter
 } from 'lucide-react'
 import { InvestmentModal } from './investment-modal'
 
@@ -56,18 +58,28 @@ export function EvaluationAssignments({ currentUserEmail, onDataRefresh }: Evalu
   const [selectedEvaluation, setSelectedEvaluation] = useState<EvaluationAssignment | null>(null)
   const [showInvestmentModal, setShowInvestmentModal] = useState(false)
   const [remainingTokens, setRemainingTokens] = useState<number>(100)
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>('all')
+  const [assignments, setAssignments] = useState<{id: string, title: string}[]>([])
 
   useEffect(() => {
     fetchEvaluations()
     fetchRemainingTokens()
   }, [])
 
-  const fetchRemainingTokens = async () => {
+  // Update tokens when assignment selection changes
+  useEffect(() => {
+    if (selectedAssignmentId !== 'all' && selectedAssignmentId) {
+      fetchRemainingTokens(selectedAssignmentId)
+    }
+  }, [selectedAssignmentId])
+
+  const fetchRemainingTokens = async (assignmentId?: string) => {
     try {
-      // Get the first assignment ID from evaluations to fetch tokens
-      if (evaluations.length > 0) {
-        const assignmentId = evaluations[0].assignmentId
-        const response = await fetch(`/api/investments/tokens?assignmentId=${assignmentId}`)
+      // Use the provided assignmentId or the first available one
+      const targetAssignmentId = assignmentId || (evaluations.length > 0 ? evaluations[0].assignmentId : null)
+      
+      if (targetAssignmentId) {
+        const response = await fetch(`/api/investments/tokens?assignmentId=${targetAssignmentId}`)
         if (response.ok) {
           const data = await response.json()
           setRemainingTokens(data.data?.remainingTokens || 100)
@@ -86,6 +98,21 @@ export function EvaluationAssignments({ currentUserEmail, onDataRefresh }: Evalu
       
       if (data.success) {
         setEvaluations(data.data || [])
+        
+        // Extract unique assignments from evaluations
+        const uniqueAssignments = Array.from(
+          new Set(
+            (data.data || [])
+              .map((evaluation: EvaluationAssignment) => ({
+                id: evaluation.assignmentId,
+                title: evaluation.assignment?.title || 'Unknown Assignment'
+              }))
+              .map((assignment: any) => JSON.stringify(assignment))
+          )
+        ).map((assignmentStr: string) => JSON.parse(assignmentStr))
+        
+        setAssignments(uniqueAssignments)
+        console.log('📋 Assignments loaded:', uniqueAssignments)
       } else {
         setError(data.error || 'Failed to fetch evaluations')
       }
@@ -165,8 +192,13 @@ export function EvaluationAssignments({ currentUserEmail, onDataRefresh }: Evalu
     )
   }
 
-  const completedEvaluations = evaluations.filter(e => e.isComplete)
-  const pendingEvaluations = evaluations.filter(e => !e.isComplete)
+  // Filter evaluations based on selected assignment
+  const filteredEvaluations = selectedAssignmentId === 'all' 
+    ? evaluations 
+    : evaluations.filter(e => e.assignmentId === selectedAssignmentId)
+
+  const completedEvaluations = filteredEvaluations.filter(e => e.isComplete)
+  const pendingEvaluations = filteredEvaluations.filter(e => !e.isComplete)
 
   return (
     <div className="space-y-4">
@@ -181,11 +213,38 @@ export function EvaluationAssignments({ currentUserEmail, onDataRefresh }: Evalu
         </div>
       </div>
 
-      {evaluations.length === 0 ? (
+      {/* Assignment Filter */}
+      <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="flex items-center space-x-2">
+          <Filter className="h-4 w-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by Assignment:</span>
+        </div>
+        <Select value={selectedAssignmentId} onValueChange={setSelectedAssignmentId}>
+          <SelectTrigger className="w-64">
+            <SelectValue placeholder="Select an assignment" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Assignments</SelectItem>
+            {assignments.map((assignment) => (
+              <SelectItem key={assignment.id} value={assignment.id}>
+                {assignment.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="text-xs text-gray-500">
+          ({assignments.length} assignment{assignments.length !== 1 ? 's' : ''} found)
+        </div>
+      </div>
+
+      {filteredEvaluations.length === 0 ? (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            No evaluation assignments available. Check back later or contact your instructor.
+            {selectedAssignmentId === 'all' 
+              ? 'No evaluation assignments available. Check back later or contact your instructor.'
+              : 'No evaluation assignments found for the selected assignment.'
+            }
           </AlertDescription>
         </Alert>
       ) : (
