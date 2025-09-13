@@ -351,22 +351,6 @@ export interface DashboardStats {
   completedEvaluations: number
 }
 
-export interface StudentDashboard {
-  user: User
-  team?: Team
-  assignments: Assignment[]
-  submissions: Submission[]
-  evaluations: Evaluation[]
-  investments: Investment[]
-  grades: Grade[]
-  investorInterests: InvestorInterest[]
-  stats: {
-    totalInvestments: number
-    totalInterestEarned: number
-    averageGrade: number
-    pendingEvaluations: number
-  }
-}
 
 export interface AdminDashboard {
   stats: DashboardStats

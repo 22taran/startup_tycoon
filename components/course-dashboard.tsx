@@ -19,7 +19,9 @@ import {
   DollarSign,
   Trophy,
   Target,
-  Edit
+  Edit,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react'
 import { Course, Assignment, Team, Submission, Grade, Investment } from '@/types'
 import { SubmitWorkModal } from './submit-work-modal'
@@ -30,12 +32,364 @@ import { EvaluationAssignments } from './evaluation-assignments'
 import StudentGradesDisplay from './student-grades-display'
 import { StudentAssignmentKanban } from './student-assignment-kanban'
 import { IndividualEvaluationDashboard } from './individual-evaluation-dashboard'
-import { AssignmentTeamManager } from './assignment-team-manager'
 
 interface CourseDashboardProps {
   courseId: string
   currentUserEmail: string
   currentUserId: string
+}
+
+interface ExpandableAssignmentCardProps {
+  assignment: Assignment
+  assignmentNumber: number
+  currentUserId: string
+  submissions: Submission[]
+  teams: Team[]
+  onAssignmentAction: (assignment: Assignment, action: 'submit' | 'invest' | 'view-grades') => void
+}
+
+interface ExpandableSubmissionCardProps {
+  submission: Submission
+  assignment: Assignment
+}
+
+interface ExpandableEvaluationCardProps {
+  assignment: Assignment
+  assignmentNumber: number
+  currentUserId: string
+}
+
+function ExpandableAssignmentCard({ assignment, assignmentNumber, currentUserId, submissions, teams, onAssignmentAction }: ExpandableAssignmentCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const isAssignmentSubmitted = (assignmentId: string) => {
+    return submissions.some(sub => sub.assignmentId === assignmentId && sub.status === 'submitted')
+  }
+
+  const getStatusBadge = () => {
+    if (assignment.isActive) {
+      return <Badge className="bg-blue-600">Active</Badge>
+    } else if (assignment.isEvaluationActive) {
+      return <Badge variant="secondary">Evaluation</Badge>
+    } else {
+      return <Badge variant="outline">Inactive</Badge>
+    }
+  }
+
+  const getAssignmentStatus = () => {
+    const now = new Date()
+    const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null
+    
+    if (dueDate && dueDate < now) {
+      return <Badge variant="destructive">Overdue</Badge>
+    }
+    return null
+  }
+
+  const handleAction = (e: React.MouseEvent, action: 'submit' | 'invest' | 'view-grades') => {
+    e.stopPropagation() // Prevent card expansion
+    onAssignmentAction(assignment, action)
+  }
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader 
+        className="pb-3 cursor-pointer" 
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-gray-500" />
+              )}
+              <Badge variant="outline" className="text-xs">
+                Assignment {assignmentNumber}
+              </Badge>
+            </div>
+            <div>
+              <CardTitle className="text-lg">{assignment.title}</CardTitle>
+              <CardDescription className="flex items-center space-x-4 mt-1">
+                <span className="flex items-center space-x-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'TBD'}</span>
+                </span>
+                <span className="flex items-center space-x-1">
+                  <Target className="h-3 w-3" />
+                  <span>{isAssignmentSubmitted(assignment.id) ? 'Submitted' : 'Not submitted'}</span>
+                </span>
+              </CardDescription>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {getStatusBadge()}
+            {getAssignmentStatus()}
+          </div>
+        </div>
+      </CardHeader>
+      
+      {isExpanded && (
+        <CardContent className="pt-0">
+          <div className="space-y-4">
+            {assignment.description && (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {assignment.description}
+              </p>
+            )}
+            
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Duration: {assignment.startDate ? new Date(assignment.startDate).toLocaleDateString() : 'TBD'} to {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'TBD'}
+              </div>
+              <div className="flex space-x-2">
+                {assignment.isActive && (
+                  <Button 
+                    size="sm"
+                    variant={isAssignmentSubmitted(assignment.id) ? "outline" : "default"}
+                    onClick={(e) => handleAction(e, 'submit')}
+                  >
+                    {isAssignmentSubmitted(assignment.id) ? 'View Submission' : 'Submit Work'}
+                  </Button>
+                )}
+                {assignment.isEvaluationActive && (
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => handleAction(e, 'invest')}
+                  >
+                    Invest
+                  </Button>
+                )}
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => handleAction(e, 'view-grades')}
+                >
+                  View Grades
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
+function ExpandableSubmissionCard({ submission, assignment }: ExpandableSubmissionCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const getStatusBadge = () => {
+    if (submission.status === 'submitted') {
+      return <Badge className="bg-green-600">Submitted</Badge>
+    } else {
+      return <Badge variant="secondary">Draft</Badge>
+    }
+  }
+
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader 
+        className="pb-3 cursor-pointer" 
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-gray-500" />
+              )}
+              <Badge variant="outline" className="text-xs">
+                Submission
+              </Badge>
+            </div>
+            <div>
+              <CardTitle className="text-lg">
+                Submission for {assignment.title}
+              </CardTitle>
+              <CardDescription className="flex items-center space-x-4 mt-1">
+                <span className="flex items-center space-x-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>Submitted: {submission.submittedAt ? new Date(submission.submittedAt).toLocaleDateString() : 'Draft'}</span>
+                </span>
+                <span className="flex items-center space-x-1">
+                  <Target className="h-3 w-3" />
+                  <span>{submission.status}</span>
+                </span>
+              </CardDescription>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {getStatusBadge()}
+          </div>
+        </div>
+      </CardHeader>
+      
+      {isExpanded && (
+        <CardContent className="pt-0">
+          <div className="space-y-4">
+            {submission.description && (
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">Description</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {submission.description}
+                </p>
+              </div>
+            )}
+
+            {submission.content && (
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">Content</h4>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                    {submission.content}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {(submission.primaryLink || submission.backupLink) && (
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">Links</h4>
+                <div className="space-y-2">
+                  {submission.primaryLink && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Primary:</span>
+                      <a 
+                        href={submission.primaryLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm break-all"
+                      >
+                        {submission.primaryLink}
+                      </a>
+                    </div>
+                  )}
+                  {submission.backupLink && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Backup:</span>
+                      <a 
+                        href={submission.backupLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm break-all"
+                      >
+                        {submission.backupLink}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {submission.fileUrl && (
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">File</h4>
+                <a 
+                  href={submission.fileUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Download File
+                </a>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-sm text-gray-500 pt-4 border-t">
+              <span>
+                Status: <Badge variant={submission.status === 'submitted' ? 'default' : 'secondary'}>
+                  {submission.status}
+                </Badge>
+              </span>
+              <span>
+                Assignment: {assignment.title}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
+function ExpandableEvaluationCard({ assignment, assignmentNumber, currentUserId }: ExpandableEvaluationCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const getStatusBadge = () => {
+    if (assignment.isActive) {
+      return <Badge className="bg-blue-600">Active</Badge>
+    } else if (assignment.isEvaluationActive) {
+      return <Badge variant="secondary">Evaluation</Badge>
+    } else {
+      return <Badge variant="outline">Inactive</Badge>
+    }
+  }
+
+  const getAssignmentStatus = () => {
+    const now = new Date()
+    const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null
+    
+    if (dueDate && dueDate < now) {
+      return <Badge variant="destructive">Overdue</Badge>
+    }
+    return null
+  }
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader 
+        className="pb-3 cursor-pointer" 
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-gray-500" />
+              )}
+              <Badge variant="outline" className="text-xs">
+                Assignment {assignmentNumber}
+              </Badge>
+            </div>
+            <div>
+              <CardTitle className="text-lg">{assignment.title}</CardTitle>
+              <CardDescription className="flex items-center space-x-4 mt-1">
+                <span className="flex items-center space-x-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'TBD'}</span>
+                </span>
+                <span className="flex items-center space-x-1">
+                  <Target className="h-3 w-3" />
+                  <span>Click to view evaluations</span>
+                </span>
+              </CardDescription>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {getStatusBadge()}
+            {getAssignmentStatus()}
+          </div>
+        </div>
+      </CardHeader>
+      
+      {isExpanded && (
+        <CardContent className="pt-0">
+          <IndividualEvaluationDashboard
+            assignmentId={assignment.id}
+            currentUserId={currentUserId}
+          />
+        </CardContent>
+      )}
+    </Card>
+  )
 }
 
 interface CourseWithDetails extends Course {
@@ -83,11 +437,11 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
   const [showEditTeamModal, setShowEditTeamModal] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
   const [showInvestmentModal, setShowInvestmentModal] = useState(false)
-  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
 
   useEffect(() => {
     fetchCourseData()
   }, [courseId])
+
 
   // Update team mappings when assignments change
   useEffect(() => {
@@ -477,7 +831,6 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             <TabsTrigger value="pipeline" className="text-xs sm:text-sm whitespace-nowrap">Pipeline</TabsTrigger>
             <TabsTrigger value="assignments" className="text-xs sm:text-sm whitespace-nowrap">Assignments</TabsTrigger>
             <TabsTrigger value="evaluations" className="text-xs sm:text-sm whitespace-nowrap">My Evaluations</TabsTrigger>
-            <TabsTrigger value="teams" className="text-xs sm:text-sm whitespace-nowrap">Team Management</TabsTrigger>
             <TabsTrigger value="submissions" className="text-xs sm:text-sm whitespace-nowrap">My Submissions</TabsTrigger>
             <TabsTrigger value="pending-investments" className="text-xs sm:text-sm whitespace-nowrap">Pending Investment</TabsTrigger>
             <TabsTrigger value="investments" className="text-xs sm:text-sm whitespace-nowrap">My Investments</TabsTrigger>
@@ -500,7 +853,6 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                 setShowSubmitModal(true)
               } else if (action === 'invest') {
                 setSelectedAssignment(assignment) // ✅ Set the assignment for investment
-                setSelectedSubmission(null)
                 setShowInvestmentModal(true)
               } else if (action === 'view-grades') {
                 const gradesTab = document.querySelector('[value="grades"]') as HTMLElement
@@ -511,7 +863,11 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
         </TabsContent>
 
         <TabsContent value="assignments" className="space-y-4">
-          <div className="grid gap-4">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Course Assignments</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Click on any assignment to view details and take actions.
+            </p>
             {assignments.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
@@ -524,76 +880,26 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
               </Card>
             ) : (
               assignments.map((assignment) => (
-                <Card key={assignment.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{assignment.title}</CardTitle>
-                        <CardDescription className="mt-1">
-                        {assignment.startDate ? formatDate(assignment.startDate.toString()) : 'TBD'} to {assignment.dueDate ? formatDate(assignment.dueDate.toString()) : 'TBD'}
-                        </CardDescription>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {assignment.isActive && (
-                          <Badge variant="default">Active</Badge>
-                        )}
-                        {assignment.isEvaluationActive && (
-                          <Badge variant="secondary">Evaluation</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {assignment.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        {assignment.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-500">
-                      Duration: {assignment.startDate ? formatDate(assignment.startDate.toString()) : 'TBD'} to {assignment.dueDate ? formatDate(assignment.dueDate.toString()) : 'TBD'}
-                      </div>
-                      <div className="flex space-x-2">
-                        {assignment.isActive && (
-                          <Button 
-                            size="sm"
-                            variant={isAssignmentSubmitted(assignment.id) ? "outline" : "default"}
-                            onClick={() => {
-                              setSelectedAssignment(assignment)
-                              setShowSubmitModal(true)
-                            }}
-                          >
-                            {isAssignmentSubmitted(assignment.id) ? (
-                              <>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Submission
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="h-4 w-4 mr-2" />
-                                Submit Work
-                              </>
-                            )}
-                          </Button>
-                        )}
-                        {assignment.isEvaluationActive && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedAssignment(assignment) // ✅ Set the assignment for investment
-                              setSelectedSubmission(null)
-                              setShowInvestmentModal(true)
-                            }}
-                          >
-                            <DollarSign className="h-4 w-4 mr-2" />
-                            Invest
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <ExpandableAssignmentCard
+                  key={assignment.id}
+                  assignment={assignment}
+                  assignmentNumber={assignments.indexOf(assignment) + 1}
+                  currentUserId={currentUserId}
+                  submissions={submissions}
+                  teams={teams}
+                  onAssignmentAction={(assignment, action) => {
+                    if (action === 'submit') {
+                      setSelectedAssignment(assignment)
+                      setShowSubmitModal(true)
+                    } else if (action === 'invest') {
+                      setSelectedAssignment(assignment)
+                      setShowInvestmentModal(true)
+                    } else if (action === 'view-grades') {
+                      const gradesTab = document.querySelector('[value="grades"]') as HTMLElement
+                      if (gradesTab) gradesTab.click()
+                    }
+                  }}
+                />
               ))
             )}
           </div>
@@ -608,20 +914,12 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             {assignments.length > 0 ? (
               <div className="space-y-4">
                 {assignments.map((assignment) => (
-                  <Card key={assignment.id}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{assignment.title}</CardTitle>
-                      <CardDescription>
-                        Due: {assignment.dueDate ? formatDate(assignment.dueDate.toString()) : 'TBD'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <IndividualEvaluationDashboard
-                        assignmentId={assignment.id}
-                        currentUserId={currentUserId}
-                      />
-                    </CardContent>
-                  </Card>
+                  <ExpandableEvaluationCard
+                    key={assignment.id}
+                    assignment={assignment}
+                    assignmentNumber={assignments.indexOf(assignment) + 1}
+                    currentUserId={currentUserId}
+                  />
                 ))}
               </div>
             ) : (
@@ -635,45 +933,13 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
           </div>
         </TabsContent>
 
-        <TabsContent value="teams" className="space-y-4">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Team Management</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Form teams for each assignment. You can change teams before the submission deadline.
-            </p>
-            {assignments.length > 0 ? (
-              <div className="space-y-4">
-                {assignments.map((assignment) => (
-                  <Card key={assignment.id}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{assignment.title}</CardTitle>
-                      <CardDescription>
-                        Due: {assignment.dueDate ? formatDate(assignment.dueDate.toString()) : 'TBD'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <AssignmentTeamManager
-                        assignmentId={assignment.id}
-                        currentUserId={currentUserId}
-                        userRole="student"
-                      />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 dark:text-gray-400">No assignments available for team formation</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
 
         <TabsContent value="submissions" className="space-y-4">
-          <div className="grid gap-4">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">My Submissions</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Click on any submission to view details and status.
+            </p>
             {submissions.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
@@ -685,38 +951,16 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                 </CardContent>
               </Card>
             ) : (
-              submissions.map((submission) => (
-                <Card key={submission.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{submission.title || 'Untitled Submission'}</CardTitle>
-                        <CardDescription className="mt-1">
-                          Submitted: {submission.submittedAt ? formatDate(submission.submittedAt.toString()) : 'Draft'}
-                        </CardDescription>
-                      </div>
-                      <Badge variant={submission.status === 'submitted' ? 'default' : 'secondary'}>
-                        {submission.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {submission.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        {submission.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-500">
-                        Assignment: {assignments.find(a => a.id === submission.assignmentId)?.title || 'Unknown'}
-                      </div>
-                      <Button size="sm">
-                        View Details
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              submissions.map((submission) => {
+                const assignment = assignments.find(a => a.id === submission.assignmentId)
+                return (
+                  <ExpandableSubmissionCard
+                    key={submission.id}
+                    submission={submission}
+                    assignment={assignment || { id: submission.assignmentId, title: 'Unknown Assignment' } as Assignment}
+                  />
+                )
+              })
             )}
           </div>
         </TabsContent>
@@ -876,6 +1120,7 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
         teamId={teams.length > 0 ? teams[0].id : ''}
         onSuccess={fetchCourseData}
       />
+
     </div>
   )
 }
