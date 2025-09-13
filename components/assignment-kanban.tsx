@@ -283,13 +283,19 @@ export function AssignmentKanban({
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-500">Start</span>
               <span className="font-medium">
-                {new Date(assignment.startDate).toLocaleDateString()} {new Date(assignment.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(assignment.startDate).toLocaleDateString()} {(() => {
+                  const time = new Date(assignment.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  return time === '00:00' ? '12:00 AM' : time;
+                })()}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-500">Due</span>
               <span className="font-medium">
-                {new Date(assignment.dueDate).toLocaleDateString()} {new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(assignment.dueDate).toLocaleDateString()} {(() => {
+                  const time = new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  return time === '00:00' ? '11:59 PM' : time;
+                })()}
               </span>
             </div>
             {assignment.evaluationStartDate && assignment.evaluationDueDate && (
@@ -297,13 +303,19 @@ export function AssignmentKanban({
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500">Eval Start</span>
                   <span className="font-medium">
-                    {new Date(assignment.evaluationStartDate).toLocaleDateString()} {new Date(assignment.evaluationStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(assignment.evaluationStartDate).toLocaleDateString()} {(() => {
+                      const time = new Date(assignment.evaluationStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      return time === '00:00' ? '12:00 AM' : time;
+                    })()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500">Eval Due</span>
                   <span className="font-medium">
-                    {new Date(assignment.evaluationDueDate).toLocaleDateString()} {new Date(assignment.evaluationDueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(assignment.evaluationDueDate).toLocaleDateString()} {(() => {
+                      const time = new Date(assignment.evaluationDueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      return time === '00:00' ? '11:59 PM' : time;
+                    })()}
                   </span>
                 </div>
               </>
