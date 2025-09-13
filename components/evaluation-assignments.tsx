@@ -365,7 +365,7 @@ export function EvaluationAssignments({ currentUserEmail, onDataRefresh }: Evalu
                     </div>
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4" />
-                      <span>Completed on {new Date().toLocaleDateString()}</span>
+                      <span>Completed on {`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</span>
                     </div>
                   </div>
                 </CardContent>

@@ -114,7 +114,7 @@ function ExpandableAssignmentCard({ assignment, assignmentNumber, currentUserId,
               <CardDescription className="flex items-center space-x-4 mt-1">
                 <span className="flex items-center space-x-1">
                   <Calendar className="h-3 w-3" />
-                  <span>Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'TBD'}</span>
+                  <span>Due: {assignment.dueDate ? `${new Date(assignment.dueDate).toLocaleDateString()} ${new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'}</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <Target className="h-3 w-3" />
@@ -141,7 +141,7 @@ function ExpandableAssignmentCard({ assignment, assignmentNumber, currentUserId,
             
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-500">
-                Duration: {assignment.startDate ? new Date(assignment.startDate).toLocaleDateString() : 'TBD'} to {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'TBD'}
+                Duration: {assignment.startDate ? `${new Date(assignment.startDate).toLocaleDateString()} ${new Date(assignment.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'} to {assignment.dueDate ? `${new Date(assignment.dueDate).toLocaleDateString()} ${new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'}
               </div>
               <div className="flex space-x-2">
                 {assignment.isActive && (
@@ -215,7 +215,7 @@ function ExpandableSubmissionCard({ submission, assignment }: ExpandableSubmissi
               <CardDescription className="flex items-center space-x-4 mt-1">
                 <span className="flex items-center space-x-1">
                   <Calendar className="h-3 w-3" />
-                  <span>Submitted: {submission.submittedAt ? new Date(submission.submittedAt).toLocaleDateString() : 'Draft'}</span>
+                  <span>Submitted: {submission.submittedAt ? `${new Date(submission.submittedAt).toLocaleDateString()} ${new Date(submission.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Draft'}</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <Target className="h-3 w-3" />
@@ -364,7 +364,7 @@ function ExpandableEvaluationCard({ assignment, assignmentNumber, currentUserId 
               <CardDescription className="flex items-center space-x-4 mt-1">
                 <span className="flex items-center space-x-1">
                   <Calendar className="h-3 w-3" />
-                  <span>Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'TBD'}</span>
+                  <span>Due: {assignment.dueDate ? `${new Date(assignment.dueDate).toLocaleDateString()} ${new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'}</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <Target className="h-3 w-3" />
@@ -563,11 +563,11 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
 
   const formatDate = (date: string | Date) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date
-    return dateObj.toLocaleDateString('en-US', {
+    return `${dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
-    })
+    })} ${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
   }
 
   // Helper functions

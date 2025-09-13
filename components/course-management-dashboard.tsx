@@ -141,11 +141,14 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = new Date(dateString)
+    const dateStr = date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     })
+    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    return `${dateStr} ${timeStr}`
   }
 
   const handleEditAssignment = (assignment: any) => {
