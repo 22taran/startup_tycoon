@@ -359,7 +359,7 @@ export function AssignmentTeamManager({ assignmentId, currentUserId, userRole }:
           <DialogHeader>
             <DialogTitle>Create New Team</DialogTitle>
             <DialogDescription>
-              Create a team for this assignment. Teams must have exactly 2 members.
+              Create a team for this assignment. Teams can have 1-2 members (solo or paired).
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateTeam}>
