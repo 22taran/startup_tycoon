@@ -87,7 +87,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, title, description, startDate, dueDate, documentUrl } = body
+    const { id, title, description, startDate, dueDate, documentUrl, evaluationStartDate, evaluationDueDate } = body
 
     if (!id || !title || !dueDate || !startDate) {
       return NextResponse.json(
@@ -108,7 +108,9 @@ export async function PUT(request: NextRequest) {
       startDate: new Date(startDate),
       dueDate: new Date(dueDate),
       documentUrl: documentUrl || null,
-      isActive: isActive
+      isActive: isActive,
+      evaluationStartDate: evaluationStartDate ? new Date(evaluationStartDate) : undefined,
+      evaluationDueDate: evaluationDueDate ? new Date(evaluationDueDate) : undefined
     })
 
     return NextResponse.json({ success: true, data: updatedAssignment })

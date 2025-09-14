@@ -33,6 +33,7 @@ import { AddTeamModal } from './add-team-modal'
 import { ManageTeamsModal } from './manage-teams-modal'
 import { AddAssignmentModal } from './add-assignment-modal'
 import { EditAssignmentModal } from './edit-assignment-modal'
+import { EditEvaluationDatesModal } from './edit-evaluation-dates-modal'
 import { SetEvaluationDeadlineModal } from './set-evaluation-deadline-modal'
 import { EvaluationStatusTable } from './evaluation-status-table'
 import GradesInterestReport from './grades-interest-report'
@@ -70,6 +71,7 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
   const [loading, setLoading] = useState(true)
   const [showCreateAssignmentModal, setShowCreateAssignmentModal] = useState(false)
   const [showEditAssignmentModal, setShowEditAssignmentModal] = useState(false)
+  const [showEditEvaluationDatesModal, setShowEditEvaluationDatesModal] = useState(false)
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null)
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false)
   const [showManageTeamsModal, setShowManageTeamsModal] = useState(false)
@@ -102,13 +104,14 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
         setCourse(courseData.data as CourseWithEnrollments)
       }
 
-      // Fetch all course-related data
+      // Fetch all course-related data with cache busting
+      const timestamp = Date.now()
       const [assignmentsRes, teamsRes, submissionsRes, investmentsRes, gradesRes] = await Promise.all([
-        fetch(`/api/assignments?courseId=${courseId}`),
-        fetch(`/api/teams?courseId=${courseId}`),
-        fetch(`/api/submissions?courseId=${courseId}`),
-        fetch(`/api/investments?courseId=${courseId}`),
-        fetch(`/api/grades?courseId=${courseId}`)
+        fetch(`/api/assignments?courseId=${courseId}&t=${timestamp}`),
+        fetch(`/api/teams?courseId=${courseId}&t=${timestamp}`),
+        fetch(`/api/submissions?courseId=${courseId}&t=${timestamp}`),
+        fetch(`/api/investments?courseId=${courseId}&t=${timestamp}`),
+        fetch(`/api/grades?courseId=${courseId}&t=${timestamp}`)
       ])
 
       const [assignmentsData, teamsData, submissionsData, investmentsData, gradesData] = await Promise.all([
@@ -122,6 +125,8 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
       console.log('📊 Fetched assignments:', assignmentsData.data?.map((a: any) => ({
         id: a.id,
         title: a.title,
+        startDate: a.startDate,
+        dueDate: a.dueDate,
         isActive: a.isActive,
         isEvaluationActive: a.isEvaluationActive
       })))
@@ -237,6 +242,11 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
   const handleEditAssignment = (assignment: any) => {
     setSelectedAssignment(assignment)
     setShowEditAssignmentModal(true)
+  }
+
+  const handleEditEvaluationDates = (assignment: any) => {
+    setSelectedAssignment(assignment)
+    setShowEditEvaluationDatesModal(true)
   }
 
   const handleDistributeAssignment = (assignment: Assignment) => {
@@ -455,6 +465,7 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
             grades={grades}
             onDistributeAssignment={handleDistributeAssignment}
             onEditAssignment={handleEditAssignment}
+            onEditEvaluationDates={handleEditEvaluationDates}
             distributing={distributing}
             distributionStatus={distributionStatus}
             onRefresh={fetchCourseData}
@@ -984,6 +995,14 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
         onOpenChange={setShowEditAssignmentModal}
         assignment={selectedAssignment}
         onAssignmentUpdated={fetchCourseData}
+      />
+
+      {/* Edit Evaluation Dates Modal */}
+      <EditEvaluationDatesModal
+        open={showEditEvaluationDatesModal}
+        onOpenChange={setShowEditEvaluationDatesModal}
+        assignment={selectedAssignment}
+        onEvaluationDatesUpdated={fetchCourseData}
       />
 
       {/* Set Evaluation Deadline Modal */}

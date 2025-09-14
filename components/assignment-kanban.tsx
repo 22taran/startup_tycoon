@@ -31,6 +31,7 @@ interface AssignmentKanbanProps {
   grades: Grade[]
   onDistributeAssignment: (assignment: Assignment) => void
   onEditAssignment: (assignment: Assignment) => void
+  onEditEvaluationDates: (assignment: Assignment) => void
   distributing: string | null
   distributionStatus: Record<string, boolean>
   onRefresh?: () => void
@@ -92,6 +93,7 @@ export function AssignmentKanban({
   grades,
   onDistributeAssignment,
   onEditAssignment,
+  onEditEvaluationDates,
   distributing,
   distributionStatus,
   onRefresh
@@ -266,14 +268,26 @@ export function AssignmentKanban({
                 {assignment.description}
               </CardDescription>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEditAssignment(assignment)}
-              className="text-gray-400 hover:text-gray-600 h-6 w-6 p-0"
-            >
-              <Settings className="h-3 w-3" />
-            </Button>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEditAssignment(assignment)}
+                className="text-gray-400 hover:text-gray-600 h-6 w-6 p-0"
+                title="Edit Assignment"
+              >
+                <Settings className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEditEvaluationDates(assignment)}
+                className="text-gray-400 hover:text-gray-600 h-6 w-6 p-0"
+                title="Edit Evaluation Dates"
+              >
+                <Calendar className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
