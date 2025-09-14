@@ -742,11 +742,6 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
         setInterestData(interestData.data)
       }
       
-      console.log('📊 Data refreshed:', {
-        assignments: (assignmentsData.data || []).length,
-        submissions: (submissionsData.data || []).length,
-        teams: (teamsData.data || []).length
-      })
       
       // For per-assignment teams, we'll fetch team info per assignment
       // For now, keep the existing logic but we'll update the submission checking

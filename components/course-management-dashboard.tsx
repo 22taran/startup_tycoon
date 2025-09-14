@@ -123,12 +123,6 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
         gradesRes.json()
       ])
 
-      console.log('📊 Fetched assignments:', assignmentsData.data?.map((a: any) => ({
-        id: a.id,
-        title: a.title,
-        isActive: a.isActive,
-        isEvaluationActive: a.isEvaluationActive
-      })))
 
       setAssignments(assignmentsData.data || [])
       setTeams(teamsData.data || [])

@@ -65,26 +65,10 @@ export default function StudentGradesDisplay({ currentUserEmail, currentUserId, 
       const interestData = await interestResponse.json()
       
       if (gradesData.success) {
-        console.log('🔍 Student Grades Debug:')
-        console.log('All grades from API:', gradesData.data.length)
-        console.log('Grades data:', gradesData.data.map((g: any) => ({ 
-          id: g.id, 
-          assignmentId: g.assignmentId, 
-          status: g.status,
-          teamMembers: g.team?.members 
-        })))
-        
         // Filter grades for the current user's team
         const userGrades = gradesData.data.filter((grade: Grade) => 
           grade.team && grade.team.members && grade.team.members.includes(currentUserId)
         )
-        
-        console.log('Filtered user grades:', userGrades.length)
-        console.log('User grades:', userGrades.map((g: Grade) => ({ 
-          id: g.id, 
-          assignmentId: g.assignmentId, 
-          status: g.status 
-        })))
         
         // Add interest data to each grade
         const gradesWithInterest = userGrades.map((grade: Grade) => {

@@ -156,13 +156,6 @@ export function StudentAssignmentKanban({
     
     const status = checkStudentSubmissionStatus(assignment.id, currentUserId, submissions, teams)
     
-    console.log(`🔍 getAssignmentStats for ${assignment.title}:`, {
-      studentId: currentUserId,
-      studentEmail: currentUserEmail,
-      isSubmitted: status.isSubmitted,
-      submissionsCount: submissions.length,
-      relevantSubmissions: submissions.filter(s => s.assignmentId === assignment.id)
-    })
     
     // Filter investments to only include the current student's investments
     const hasInvested = investments.some(i => 

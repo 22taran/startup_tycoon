@@ -138,11 +138,8 @@ export function AdminGradeReview({ assignmentId, onGradesUpdated }: AdminGradeRe
 
   const handleBulkAction = async (action: string) => {
     if (!action || selectedGrades.length === 0) {
-      console.log('❌ Bulk action failed: No action or no selected grades')
       return
     }
-
-    console.log('🔄 Performing bulk action:', { action, selectedGrades })
 
     try {
       setSaving(true)
