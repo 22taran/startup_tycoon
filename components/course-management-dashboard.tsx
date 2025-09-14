@@ -125,8 +125,6 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
       console.log('📊 Fetched assignments:', assignmentsData.data?.map((a: any) => ({
         id: a.id,
         title: a.title,
-        startDate: a.startDate,
-        dueDate: a.dueDate,
         isActive: a.isActive,
         isEvaluationActive: a.isEvaluationActive
       })))
