@@ -31,7 +31,7 @@ interface StudentAssignmentKanbanProps {
   teams: any[]
   currentUserEmail: string
   currentUserId: string
-  onAssignmentAction: (assignment: Assignment, action: 'submit' | 'invest' | 'view-grades') => void
+  onAssignmentAction: (assignment: Assignment, action: 'submit' | 'view-grades') => void
 }
 
 type AssignmentStage = 'to-do' | 'in-progress' | 'evaluation' | 'completed'
@@ -164,15 +164,23 @@ export function StudentAssignmentKanban({
       relevantSubmissions: submissions.filter(s => s.assignmentId === assignment.id)
     })
     
-    const hasInvested = investments.some(i => i.assignmentId === assignment.id)
-    const assignmentGrades = grades.filter(g => g.assignmentId === assignment.id)
+    // Filter investments to only include the current student's investments
+    const hasInvested = investments.some(i => 
+      i.assignmentId === assignment.id && 
+      i.investorId === currentUserId
+    )
+    
+    // Filter grades to only include the current student's team's grade
+    const studentTeamGrades = status.teamId ? 
+      grades.filter(g => g.assignmentId === assignment.id && g.teamId === status.teamId) :
+      []
     
     return {
       isSubmitted: status.isSubmitted,
       hasInvested,
-      totalGrades: assignmentGrades.length,
-      averageGrade: assignmentGrades.length > 0 ? 
-        assignmentGrades.reduce((sum, g) => sum + (g.percentage || 0), 0) / assignmentGrades.length : 0
+      totalGrades: studentTeamGrades.length,
+      averageGrade: studentTeamGrades.length > 0 ? 
+        studentTeamGrades.reduce((sum, g) => sum + (g.percentage || 0), 0) / studentTeamGrades.length : 0
     }
   }
 
@@ -270,10 +278,13 @@ export function StudentAssignmentKanban({
               <FileText className="h-3 w-3 text-gray-400" />
               <span>{stats.isSubmitted ? 'Submitted' : 'Not Submitted'}</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <DollarSign className="h-3 w-3 text-gray-400" />
-              <span>{stats.hasInvested ? 'Invested' : 'Not Invested'}</span>
-            </div>
+            {/* Only show investment status for non-completed assignments */}
+            {stage !== 'completed' && (
+              <div className="flex items-center space-x-1">
+                <DollarSign className="h-3 w-3 text-gray-400" />
+                <span>{stats.hasInvested ? 'Invested' : 'Not Invested'}</span>
+              </div>
+            )}
             {stats.totalGrades > 0 && (
               <div className="flex items-center space-x-1 col-span-1 sm:col-span-2">
                 <Trophy className="h-3 w-3 text-gray-400" />
@@ -388,14 +399,6 @@ export function StudentAssignmentKanban({
                     Submit Work
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  className="w-full text-xs h-7 bg-purple-600 hover:bg-purple-700"
-                  onClick={() => onAssignmentAction(assignment, 'invest')}
-                >
-                  <DollarSign className="h-3 w-3 mr-1" />
-                  Invest in Teams
-                </Button>
               </div>
             )}
 
