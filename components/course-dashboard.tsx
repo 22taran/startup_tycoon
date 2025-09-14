@@ -603,8 +603,16 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
 
   const getAverageGrade = () => {
     if (grades.length === 0) return 0
-    const totalPercentage = grades.reduce((sum, grade) => sum + (grade.percentage || 0), 0)
-    return Math.round(totalPercentage / grades.length)
+    
+    // Filter grades for the current user's team only
+    const userTeamGrades = grades.filter((grade: any) => 
+      grade.team && grade.team.members && grade.team.members.includes(currentUserId)
+    )
+    
+    if (userTeamGrades.length === 0) return 0
+    
+    const totalPercentage = userTeamGrades.reduce((sum, grade) => sum + (grade.percentage || 0), 0)
+    return Math.round(totalPercentage / userTeamGrades.length)
   }
 
   const getActiveAssignments = () => {
@@ -718,13 +726,13 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Grade</CardTitle>
+            <CardTitle className="text-sm font-medium">Your Average Grade</CardTitle>
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{getAverageGrade()}%</div>
             <p className="text-xs text-muted-foreground">
-              Your team's performance
+              Across your team's assignments
             </p>
           </CardContent>
         </Card>
