@@ -11,8 +11,7 @@ export const uuidSchema = z.string().uuid('Invalid ID format')
 export const createUserSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
-  name: nameSchema,
-  role: z.enum(['admin', 'student']).default('student')
+  name: nameSchema
 })
 
 export const updateUserSchema = z.object({
