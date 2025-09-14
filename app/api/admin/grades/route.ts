@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
     // Get current grade to preserve original values if not already set
     const { data: currentGrade } = await supabase
       .from('grades')
-      .select('original_grade, original_percentage')
+      .select('grade, percentage, original_grade, original_percentage')
       .eq('id', id)
       .single()
 
