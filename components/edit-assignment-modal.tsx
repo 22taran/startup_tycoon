@@ -105,6 +105,13 @@ export function EditAssignmentModal({ open, onOpenChange, assignment, onAssignme
         setUploading(false)
       }
 
+      console.log('🔄 Updating assignment with data:', {
+        id: assignment.id,
+        title: formData.title,
+        startDate: formData.startDate,
+        dueDate: formData.dueDate
+      })
+
       const response = await fetch('/api/assignments', {
         method: 'PUT',
         headers: {
@@ -121,11 +128,14 @@ export function EditAssignmentModal({ open, onOpenChange, assignment, onAssignme
       })
 
       const data = await response.json()
+      console.log('📝 Update response:', data)
 
       if (data.success) {
+        console.log('✅ Assignment updated successfully')
         onOpenChange(false)
         onAssignmentUpdated()
       } else {
+        console.error('❌ Update failed:', data.error)
         setError(data.error || 'Failed to update assignment')
       }
     } catch (error) {

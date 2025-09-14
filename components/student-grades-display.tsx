@@ -16,6 +16,7 @@ interface Grade {
   grade: 'high' | 'median' | 'low' | 'incomplete'
   percentage: number
   totalInvestments: number
+  interestEarned?: number
   team: {
     id: string
     name: string
@@ -47,22 +48,41 @@ export default function StudentGradesDisplay({ currentUserEmail, currentUserId }
       setLoading(true)
       setError(null)
       
-      const response = await fetch('/api/grades')
-      const data = await response.json()
+      if (!currentUserId) {
+        setGrades([])
+        return
+      }
       
-      if (data.success) {
-        if (!currentUserId) {
-          setGrades([])
-          return
-        }
-        
+      // Fetch both grades and interest data
+      const [gradesResponse, interestResponse] = await Promise.all([
+        fetch('/api/grades'),
+        fetch(`/api/student-interest?studentId=${currentUserId}`)
+      ])
+      
+      const gradesData = await gradesResponse.json()
+      const interestData = await interestResponse.json()
+      
+      if (gradesData.success) {
         // Filter grades for the current user's team
-        const userGrades = data.data.filter((grade: Grade) => 
+        const userGrades = gradesData.data.filter((grade: Grade) => 
           grade.team && grade.team.members && grade.team.members.includes(currentUserId)
         )
-        setGrades(userGrades)
+        
+        // Add interest data to each grade
+        const gradesWithInterest = userGrades.map((grade: Grade) => {
+          // Find interest data for this assignment from the array
+          const assignmentInterest = interestData.success && interestData.data?.interestByAssignment?.find(
+            (item: any) => item.assignmentId === grade.assignmentId
+          )
+          return {
+            ...grade,
+            interestEarned: assignmentInterest?.totalInterest || 0
+          }
+        })
+        
+        setGrades(gradesWithInterest)
       } else {
-        setError(data.error || 'Failed to fetch grades')
+        setError(gradesData.error || 'Failed to fetch grades')
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch grades')
@@ -100,10 +120,6 @@ export default function StudentGradesDisplay({ currentUserEmail, currentUserId }
       default: return 'Grade pending or not available.'
     }
   }
-
-  useEffect(() => {
-    fetchGrades()
-  }, [currentUserEmail, currentUserId])
 
   if (loading) {
     return (
@@ -144,87 +160,34 @@ export default function StudentGradesDisplay({ currentUserEmail, currentUserId }
       <div>
         <h3 className="text-lg font-semibold">Your Team's Grades</h3>
         <p className="text-sm text-gray-600">
-          View your team's performance across all assignments
+          View your team's performance for each assignment
         </p>
       </div>
 
-      {/* Overall Statistics */}
-      {totalGrades > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overall Average</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{averageGrade.toFixed(1)}%</div>
-              <p className="text-xs text-muted-foreground">
-                Across {totalGrades} assignment{totalGrades !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">High Grades</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{highGrades}</div>
-              <p className="text-xs text-muted-foreground">
-                {totalGrades > 0 ? `${((highGrades / totalGrades) * 100).toFixed(0)}%` : '0%'} of assignments
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Investment</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{averageInvestment.toFixed(1)}</div>
-              <p className="text-xs text-muted-foreground">
-                Average tokens received
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
-              <Target className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalGrades}</div>
-              <p className="text-xs text-muted-foreground">
-                Graded assignments
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Grades List */}
+      {/* Individual Assignment Grades */}
       {grades.length === 0 ? (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            No grades available yet. Grades will appear here once assignments are evaluated.
+            No grades available yet. Your assignments will be graded after the evaluation period.
           </AlertDescription>
         </Alert>
       ) : (
         <div className="space-y-4">
+          <div className="mb-4">
+            <h4 className="text-md font-medium text-gray-900">Individual Assignment Grades</h4>
+            <p className="text-sm text-gray-600">Each card below shows your team's grade for a specific assignment</p>
+          </div>
           {grades.map((grade) => (
             <Card key={grade.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-lg">
-                      {grade.assignment?.title || `Assignment ${grade.assignmentId}`}
+                      {grade.assignment?.title || 'Assignment'}
                     </CardTitle>
                     <CardDescription>
-                      {grade.team.name} • {grade.team.members.join(', ')}
+                      Due: {grade.assignment?.due_date ? new Date(grade.assignment.due_date).toLocaleDateString() : 'TBD'}
                     </CardDescription>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -233,39 +196,68 @@ export default function StudentGradesDisplay({ currentUserEmail, currentUserId }
                       <span className="ml-1 capitalize">{grade.grade}</span>
                     </Badge>
                     <div className="text-right">
-                      <div className="text-2xl font-bold">{grade.percentage}%</div>
-                      <div className="text-sm text-gray-600">
-                        {grade.averageInvestment.toFixed(1)} avg investment
+                      <div className="text-2xl font-bold text-blue-600">{grade.percentage || 0}%</div>
+                      <div className="text-sm text-gray-600 font-medium">Your Grade</div>
+                      <div className="text-xs text-gray-500">
+                        {(grade.averageInvestment || 0).toFixed(1)} avg investment
                       </div>
                     </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span>Investment Average</span>
-                    <span>{grade.averageInvestment.toFixed(1)} tokens</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Team Performance:</span>
+                    <span className="text-sm text-gray-600">{grade.team?.name || 'Unknown Team'}</span>
                   </div>
-                  <Progress 
-                    value={grade.averageInvestment} 
-                    max={50} 
-                    className="h-2"
-                  />
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Total Investments: {grade.totalInvestments}</span>
-                    <span>Final Grade: {grade.percentage}%</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Total investments your work received:</span>
+                    <span className="text-sm text-gray-600">{grade.totalInvestments || 0}</span>
                   </div>
-                  <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {getGradeMessage(grade.grade)}
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Interest received from this assignment:</span>
+                    <span className="text-sm text-green-600 font-semibold">{grade.interestEarned?.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-700">{getGradeMessage(grade.grade)}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Performance Summary - Only show if multiple assignments */}
+      {totalGrades > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Performance Summary</CardTitle>
+            <CardDescription>
+              Your overall performance across all assignments (individual grades shown above)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{averageGrade.toFixed(1)}%</div>
+                <div className="text-sm text-blue-700">Overall Average</div>
+                <div className="text-xs text-blue-600 mt-1">Across all assignments</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{highGrades}</div>
+                <div className="text-sm text-green-700">High Grades</div>
+                <div className="text-xs text-green-600 mt-1">Individual assignments</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">{totalGrades}</div>
+                <div className="text-sm text-purple-700">Total Assignments</div>
+                <div className="text-xs text-purple-600 mt-1">Graded so far</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

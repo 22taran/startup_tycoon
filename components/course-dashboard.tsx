@@ -45,7 +45,7 @@ interface ExpandableAssignmentCardProps {
   currentUserId: string
   submissions: Submission[]
   teams: Team[]
-  onAssignmentAction: (assignment: Assignment, action: 'submit' | 'invest' | 'view-grades') => void
+  onAssignmentAction: (assignment: Assignment, action: 'submit' | 'view-grades') => void
 }
 
 interface ExpandableSubmissionCardProps {
@@ -66,35 +66,89 @@ function ExpandableAssignmentCard({ assignment, assignmentNumber, currentUserId,
     return submissions.some(sub => sub.assignmentId === assignmentId && sub.status === 'submitted')
   }
 
-  const getStatusBadge = () => {
-    if (assignment.isActive) {
-      return <Badge className="bg-blue-600">Active</Badge>
-    } else if (assignment.isEvaluationActive) {
-      return <Badge variant="secondary">Evaluation</Badge>
-    } else {
-      return <Badge variant="outline">Inactive</Badge>
-    }
-  }
-
-  const getAssignmentStatus = () => {
+  // Determine current phase and status
+  const getAssignmentPhase = () => {
     const now = new Date()
+    const startDate = assignment.startDate ? new Date(assignment.startDate) : null
     const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null
-    
-    if (dueDate && dueDate < now) {
-      return <Badge variant="destructive">Overdue</Badge>
+    const evaluationStartDate = assignment.evaluationStartDate ? new Date(assignment.evaluationStartDate) : null
+    const evaluationDueDate = assignment.evaluationDueDate ? new Date(assignment.evaluationDueDate) : null
+
+    // Check if assignment has grades (completed) - this would need to be passed as a prop or checked differently
+    // For now, we'll rely on the evaluation phase completion logic below
+
+    // Check if evaluation phase is active
+    if (assignment.isEvaluationActive) {
+      if (evaluationStartDate && evaluationDueDate) {
+        if (now >= evaluationStartDate && now <= evaluationDueDate) {
+          return { phase: 'evaluation', status: 'Evaluation Active', color: 'bg-blue-100 text-blue-800', icon: '👥' }
+        } else if (now > evaluationDueDate) {
+          return { phase: 'completed', status: 'Evaluation Complete', color: 'bg-purple-100 text-purple-800', icon: '✅' }
+        }
+      }
+      return { phase: 'evaluation', status: 'Evaluation Phase', color: 'bg-blue-100 text-blue-800', icon: '👥' }
     }
-    return null
+
+    // Check submission phase
+    if (startDate && dueDate) {
+      if (now < startDate) {
+        return { phase: 'upcoming', status: 'Upcoming', color: 'bg-gray-100 text-gray-800', icon: '⏰' }
+      } else if (now >= startDate && now <= dueDate) {
+        return { phase: 'submission', status: 'Submission Active', color: 'bg-green-100 text-green-800', icon: '📝' }
+      } else if (now > dueDate) {
+        return { phase: 'submission-closed', status: 'Submission Closed', color: 'bg-orange-100 text-orange-800', icon: '⏰' }
+      }
+    }
+
+    return { phase: 'unknown', status: 'Unknown', color: 'bg-gray-100 text-gray-800', icon: '❓' }
   }
 
-  const handleAction = (e: React.MouseEvent, action: 'submit' | 'invest' | 'view-grades') => {
+  const getTimeRemaining = (date: Date | string) => {
+    const now = new Date()
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    const diff = dateObj.getTime() - now.getTime()
+    
+    if (diff <= 0) return 'Expired'
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (days > 0) return `${days}d ${hours}h`
+    if (hours > 0) return `${hours}h ${minutes}m`
+    return `${minutes}m`
+  }
+
+  const getUrgencyColor = (date: Date | string) => {
+    const now = new Date()
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    const diff = dateObj.getTime() - now.getTime()
+    const hours = diff / (1000 * 60 * 60)
+    
+    if (hours < 0) return 'text-red-600'
+    if (hours < 24) return 'text-orange-600'
+    if (hours < 72) return 'text-yellow-600'
+    return 'text-green-600'
+  }
+
+  const phase = getAssignmentPhase()
+  const submitted = isAssignmentSubmitted(assignment.id)
+
+  const handleAction = (e: React.MouseEvent, action: 'submit' | 'view-grades') => {
     e.stopPropagation() // Prevent card expansion
     onAssignmentAction(assignment, action)
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={`hover:shadow-md transition-shadow ${phase.phase === 'submission' ? 'ring-2 ring-green-200 bg-green-50/30' : phase.phase === 'evaluation' ? 'ring-2 ring-blue-200 bg-blue-50/30' : ''}`}>
+      {/* Phase Indicator Bar */}
+      <div className={`h-1 w-full ${phase.phase === 'upcoming' ? 'bg-gray-300' : 
+        phase.phase === 'submission' ? 'bg-green-500' : 
+        phase.phase === 'evaluation' ? 'bg-blue-500' : 
+        phase.phase === 'completed' ? 'bg-purple-500' : 'bg-gray-300'}`} />
+      
       <CardHeader 
-        className="pb-3 cursor-pointer" 
+        className="pb-4 cursor-pointer" 
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
@@ -105,72 +159,218 @@ function ExpandableAssignmentCard({ assignment, assignmentNumber, currentUserId,
               ) : (
                 <ChevronRight className="h-4 w-4 text-gray-500" />
               )}
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs font-medium">
                 Assignment {assignmentNumber}
               </Badge>
             </div>
-            <div>
-              <CardTitle className="text-lg">{assignment.title}</CardTitle>
-              <CardDescription className="flex items-center space-x-4 mt-1">
+            <div className="flex-1">
+              <CardTitle className="text-xl mb-2">{assignment.title}</CardTitle>
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <span className="flex items-center space-x-1">
-                  <Calendar className="h-3 w-3" />
-                  <span>Due: {assignment.dueDate ? `${new Date(assignment.dueDate).toLocaleDateString()} ${new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'}</span>
+                  <Calendar className="h-4 w-4" />
+                  <span>Due: {assignment.dueDate ? `${new Date(assignment.dueDate).toLocaleDateString()} at ${new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'}</span>
                 </span>
                 <span className="flex items-center space-x-1">
-                  <Target className="h-3 w-3" />
-                  <span>{isAssignmentSubmitted(assignment.id) ? 'Submitted' : 'Not submitted'}</span>
+                  <Target className="h-4 w-4" />
+                  <span className={submitted ? 'text-green-600 font-medium' : 'text-orange-600 font-medium'}>
+                    {submitted ? 'Submitted' : 'Not Submitted'}
                 </span>
-              </CardDescription>
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {getStatusBadge()}
-            {getAssignmentStatus()}
+            <Badge className={`text-xs font-medium px-3 py-1 ${phase.color}`}>
+              <span className="mr-1">{phase.icon}</span>
+              {phase.status}
+            </Badge>
           </div>
         </div>
       </CardHeader>
       
       {isExpanded && (
-        <CardContent className="pt-0">
-          <div className="space-y-4">
+        <CardContent className="pt-0 space-y-6">
+          {/* Assignment Description */}
             {assignment.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Description</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                 {assignment.description}
               </p>
-            )}
-            
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-500">
-                Duration: {assignment.startDate ? `${new Date(assignment.startDate).toLocaleDateString()} ${new Date(assignment.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'} to {assignment.dueDate ? `${new Date(assignment.dueDate).toLocaleDateString()} ${new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'}
+            </div>
+          )}
+
+          {/* Phase Timeline */}
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Assignment Timeline</h4>
+            <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400">
+              <div className={`flex items-center space-x-1 ${phase.phase === 'upcoming' ? 'text-blue-600 font-medium' : ''}`}>
+                <div className={`w-2 h-2 rounded-full ${phase.phase === 'upcoming' ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                <span>Upcoming</span>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex-1 h-px bg-gray-300" />
+              <div className={`flex items-center space-x-1 ${phase.phase === 'submission' ? 'text-green-600 font-medium' : ''}`}>
+                <div className={`w-2 h-2 rounded-full ${phase.phase === 'submission' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span>Submission</span>
+              </div>
+              <div className="flex-1 h-px bg-gray-300" />
+              <div className={`flex items-center space-x-1 ${phase.phase === 'evaluation' ? 'text-blue-600 font-medium' : ''}`}>
+                <div className={`w-2 h-2 rounded-full ${phase.phase === 'evaluation' ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                <span>Evaluation</span>
+              </div>
+              <div className="flex-1 h-px bg-gray-300" />
+              <div className={`flex items-center space-x-1 ${phase.phase === 'completed' ? 'text-purple-600 font-medium' : ''}`}>
+                <div className={`w-2 h-2 rounded-full ${phase.phase === 'completed' ? 'bg-purple-500' : 'bg-gray-300'}`} />
+                <span>Completed</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Key Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Submission Info */}
+            <div className="space-y-3">
+              <h5 className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                <FileText className="h-4 w-4 mr-2" />
+                Submission Details
+              </h5>
+              <div className="space-y-2">
+            <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Due Date:</span>
+                  <span className="text-sm font-medium">
+                    {assignment.dueDate ? `${new Date(assignment.dueDate).toLocaleDateString()} at ${new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'}
+                  </span>
+              </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Time Left:</span>
+                  <span className={`text-sm font-bold ${getUrgencyColor(assignment.dueDate)}`}>
+                    {assignment.dueDate ? getTimeRemaining(assignment.dueDate) : 'TBD'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Status:</span>
+                  <div className="flex items-center space-x-1">
+                    {submitted ? (
+                      <>
+                        <span className="text-green-600">✅</span>
+                        <span className="text-sm text-green-600 font-medium">Submitted</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-orange-500">⚠️</span>
+                        <span className="text-sm text-orange-500 font-medium">Not Submitted</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Evaluation Info */}
+            {assignment.evaluationStartDate && assignment.evaluationDueDate && (
+              <div className="space-y-3">
+                <h5 className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                  <Users className="h-4 w-4 mr-2" />
+                  Evaluation Details
+                </h5>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Period:</span>
+                    <span className="text-sm font-medium">
+                      {new Date(assignment.evaluationStartDate).toLocaleDateString()} - {new Date(assignment.evaluationDueDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Time Left:</span>
+                    <span className={`text-sm font-bold ${getUrgencyColor(assignment.evaluationDueDate)}`}>
+                      {getTimeRemaining(assignment.evaluationDueDate)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Status:</span>
+                    <div className="flex items-center space-x-1">
+                      {phase.phase === 'evaluation' ? (
+                        <>
+                          <span className="text-blue-600">👥</span>
+                          <span className="text-sm text-blue-600 font-medium">Active</span>
+                        </>
+                      ) : phase.phase === 'completed' ? (
+                        <>
+                          <span className="text-purple-600">✅</span>
+                          <span className="text-sm text-purple-600 font-medium">Complete</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-gray-500">⏰</span>
+                          <span className="text-sm text-gray-500 font-medium">Not Started</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Required Alert */}
+          {phase.phase === 'submission' && !submitted && (
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+              <div className="flex items-center text-orange-800 dark:text-orange-200">
+                <span className="text-xl mr-3">⚠️</span>
+                <div>
+                  <p className="font-medium">Action Required</p>
+                  <p className="text-sm">Submit your assignment before the deadline</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {phase.phase === 'evaluation' && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-center text-blue-800 dark:text-blue-200">
+                <span className="text-xl mr-3">👥</span>
+                <div>
+                  <p className="font-medium">Evaluation Phase Active</p>
+                  <p className="text-sm">Invest tokens in other teams' submissions to complete evaluations</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {phase.phase === 'completed' && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <div className="flex items-center text-green-800 dark:text-green-200">
+                <span className="text-xl mr-3">✅</span>
+                <div>
+                  <p className="font-medium">Assignment Completed</p>
+                  <p className="text-sm">This assignment is fully completed and graded</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                 {assignment.isActive && (
                   <Button 
                     size="sm"
-                    variant={isAssignmentSubmitted(assignment.id) ? "outline" : "default"}
+                variant={submitted ? "outline" : "default"}
                     onClick={(e) => handleAction(e, 'submit')}
-                  >
-                    {isAssignmentSubmitted(assignment.id) ? 'View Submission' : 'Submit Work'}
-                  </Button>
-                )}
-                {assignment.isEvaluationActive && (
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => handleAction(e, 'invest')}
-                  >
-                    Invest
+                className="flex items-center space-x-1"
+              >
+                <span>{submitted ? '👁️' : '📝'}</span>
+                <span>{submitted ? 'View Submission' : 'Submit Work'}</span>
                   </Button>
                 )}
                 <Button 
                   size="sm"
                   variant="outline"
                   onClick={(e) => handleAction(e, 'view-grades')}
+              className="flex items-center space-x-1"
                 >
-                  View Grades
+              <span>📊</span>
+              <span>View Grades & Feedback</span>
                 </Button>
-              </div>
-            </div>
           </div>
         </CardContent>
       )}
@@ -437,6 +637,7 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
   const [showEditTeamModal, setShowEditTeamModal] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
   const [showInvestmentModal, setShowInvestmentModal] = useState(false)
+  const [activeTab, setActiveTab] = useState('pipeline')
 
   useEffect(() => {
     fetchCourseData()
@@ -597,14 +798,19 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
     ).length
   }
 
-  const getTotalInvested = () => {
-    return investments.reduce((total, investment) => total + investment.amount, 0)
-  }
 
   const getAverageGrade = () => {
     if (grades.length === 0) return 0
-    const totalPercentage = grades.reduce((sum, grade) => sum + (grade.percentage || 0), 0)
-    return Math.round(totalPercentage / grades.length)
+    
+    // Filter grades for the current user's team only
+    const userTeamGrades = grades.filter((grade: any) => 
+      grade.team && grade.team.members && grade.team.members.includes(currentUserId)
+    )
+    
+    if (userTeamGrades.length === 0) return 0
+    
+    const totalPercentage = userTeamGrades.reduce((sum, grade) => sum + (grade.percentage || 0), 0)
+    return Math.round(totalPercentage / userTeamGrades.length)
   }
 
   const getActiveAssignments = () => {
@@ -705,26 +911,13 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Invested</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{getTotalInvested()}</div>
-            <p className="text-xs text-muted-foreground">
-              Tokens invested
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Grade</CardTitle>
+            <CardTitle className="text-sm font-medium">Your Average Grade</CardTitle>
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{getAverageGrade()}%</div>
             <p className="text-xs text-muted-foreground">
-              Your team's performance
+              Across your team's assignments
             </p>
           </CardContent>
         </Card>
@@ -738,24 +931,6 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             <div className="text-2xl font-bold">{interestData?.totalInterest?.toFixed(1) || 0}</div>
             <p className="text-xs text-muted-foreground">
               Interest earned from investments
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bonus Potential</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {typeof interestData?.bonusPercentage === 'number'
-                ? (interestData.bonusPercentage * 100).toFixed(1)
-                : '0'}
-              %
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Bonus to final grade (max 20%)
             </p>
           </CardContent>
         </Card>
@@ -825,7 +1000,7 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
       </Card>
 
       {/* Main Content */}
-      <Tabs defaultValue="pipeline" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="overflow-x-auto">
           <TabsList className="flex w-max min-w-full">
             <TabsTrigger value="pipeline" className="text-xs sm:text-sm whitespace-nowrap">Pipeline</TabsTrigger>
@@ -847,16 +1022,12 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             teams={teams}
             currentUserEmail={currentUserEmail}
             currentUserId={currentUserId}
-            onAssignmentAction={(assignment: Assignment, action: 'submit' | 'invest' | 'view-grades') => {
+            onAssignmentAction={(assignment: Assignment, action: 'submit' | 'view-grades') => {
               if (action === 'submit') {
                 setSelectedAssignment(assignment)
                 setShowSubmitModal(true)
-              } else if (action === 'invest') {
-                setSelectedAssignment(assignment) // ✅ Set the assignment for investment
-                setShowInvestmentModal(true)
               } else if (action === 'view-grades') {
-                const gradesTab = document.querySelector('[value="grades"]') as HTMLElement
-                if (gradesTab) gradesTab.click()
+                setActiveTab('grades')
               }
             }}
           />
@@ -891,12 +1062,8 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                     if (action === 'submit') {
                       setSelectedAssignment(assignment)
                       setShowSubmitModal(true)
-                    } else if (action === 'invest') {
-                      setSelectedAssignment(assignment)
-                      setShowInvestmentModal(true)
                     } else if (action === 'view-grades') {
-                      const gradesTab = document.querySelector('[value="grades"]') as HTMLElement
-                      if (gradesTab) gradesTab.click()
+                      setActiveTab('grades')
                     }
                   }}
                 />
