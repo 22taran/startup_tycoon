@@ -24,10 +24,11 @@ export async function POST(request: NextRequest) {
       return validation.error
     }
     
-    const { name, email, password, role } = validation.data
+    const { name, email, password } = validation.data
 
     // Role is always 'student' for new signups
     // Admins are created directly in the database
+    const role = 'student'
 
     // Check if user already exists
     const { data: existingUser } = await supabase

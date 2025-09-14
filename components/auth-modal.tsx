@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
 
@@ -34,8 +33,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
     email: '',
     password: '',
     confirmPassword: '',
-    name: '',
-    role: 'student' as 'admin' | 'student'
+    name: ''
   })
 
   // Sign in form state
@@ -60,8 +58,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
         email: '',
         password: '',
         confirmPassword: '',
-        name: '',
-        role: 'student'
+        name: ''
       })
       setSignInData({
         email: '',
@@ -144,7 +141,6 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
           name: signUpData.name,
           email: signUpData.email,
           password: signUpData.password,
-          role: signUpData.role,
         }),
       })
 
@@ -159,8 +155,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
         email: '',
         password: '',
         confirmPassword: '',
-        name: '',
-        role: 'student'
+        name: ''
       })
       setActiveTab('signin')
     } catch (error: any) {
@@ -387,18 +382,6 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-role">Role</Label>
-                      <Select value={signUpData.role} onValueChange={(value: 'admin' | 'student') => setSignUpData({ ...signUpData, role: value })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="student">Student</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="signup-password">Password</Label>
