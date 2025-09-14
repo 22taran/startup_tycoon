@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { AssignmentKanban } from './assignment-kanban'
 import GradesDisplay from './grades-display'
+import { AdminGradeReview } from './admin-grade-review'
 import { BreadcrumbNavigation } from './breadcrumb-navigation'
 import { AddTeamModal } from './add-team-modal'
 import { ManageTeamsModal } from './manage-teams-modal'
@@ -122,12 +123,6 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
         gradesRes.json()
       ])
 
-      console.log('📊 Fetched assignments:', assignmentsData.data?.map((a: any) => ({
-        id: a.id,
-        title: a.title,
-        isActive: a.isActive,
-        isEvaluationActive: a.isEvaluationActive
-      })))
 
       setAssignments(assignmentsData.data || [])
       setTeams(teamsData.data || [])
@@ -447,6 +442,7 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
           <TabsTrigger value="students">🎓 Students</TabsTrigger>
           <TabsTrigger value="evaluations">📋 Evaluations</TabsTrigger>
           <TabsTrigger value="grades">📊 Grades</TabsTrigger>
+          <TabsTrigger value="grade-review">🔍 Grade Review</TabsTrigger>
           <TabsTrigger value="reports">📋 Reports</TabsTrigger>
           <TabsTrigger value="analytics">📈 Analytics</TabsTrigger>
           <TabsTrigger value="resources">📁 Resources</TabsTrigger>
@@ -835,6 +831,50 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
                       <GradesDisplay 
                         assignmentId={assignment.id} 
                         showCalculateButton={true} 
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-500">No assignments found</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Grade Review Tab */}
+        <TabsContent value="grade-review" className="space-y-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Grade Review & Management</h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Review, edit, and manage grades before publishing to students
+                </p>
+              </div>
+            </div>
+            
+            {assignments.length > 0 ? (
+              <div className="space-y-4">
+                {assignments.map((assignment) => (
+                  <Card key={assignment.id}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                      <CardDescription>
+                        Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'TBD'}
+                        {assignment.isEvaluationActive && (
+                          <span className="ml-2 text-green-600 font-medium">• Evaluation Active</span>
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <AdminGradeReview 
+                        assignmentId={assignment.id} 
+                        onGradesUpdated={fetchCourseData}
                       />
                     </CardContent>
                   </Card>

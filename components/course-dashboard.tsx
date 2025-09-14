@@ -742,11 +742,6 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
         setInterestData(interestData.data)
       }
       
-      console.log('📊 Data refreshed:', {
-        assignments: (assignmentsData.data || []).length,
-        submissions: (submissionsData.data || []).length,
-        teams: (teamsData.data || []).length
-      })
       
       // For per-assignment teams, we'll fetch team info per assignment
       // For now, keep the existing logic but we'll update the submission checking
@@ -1022,12 +1017,14 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             teams={teams}
             currentUserEmail={currentUserEmail}
             currentUserId={currentUserId}
-            onAssignmentAction={(assignment: Assignment, action: 'submit' | 'view-grades') => {
+            onAssignmentAction={(assignment: Assignment, action: 'submit' | 'view-grades' | 'evaluate') => {
               if (action === 'submit') {
                 setSelectedAssignment(assignment)
                 setShowSubmitModal(true)
               } else if (action === 'view-grades') {
                 setActiveTab('grades')
+              } else if (action === 'evaluate') {
+                setActiveTab('evaluations')
               }
             }}
           />
@@ -1107,7 +1104,13 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Click on any submission to view details and status.
             </p>
-            {submissions.length === 0 ? (
+            {(() => {
+              // Find the current user's team
+              const userTeam = teams.find(team => team.members?.includes(currentUserId))
+              const userSubmissions = userTeam 
+                ? submissions.filter(submission => submission.teamId === userTeam.id)
+                : []
+              return userSubmissions.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
                   <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -1118,7 +1121,7 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                 </CardContent>
               </Card>
             ) : (
-              submissions.map((submission) => {
+                userSubmissions.map((submission) => {
                 const assignment = assignments.find(a => a.id === submission.assignmentId)
                 return (
                   <ExpandableSubmissionCard
@@ -1128,7 +1131,8 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                   />
                 )
               })
-            )}
+              )
+            })()}
           </div>
         </TabsContent>
 
@@ -1141,7 +1145,9 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
 
         <TabsContent value="investments" className="space-y-4">
           <div className="grid gap-4">
-            {investments.length === 0 ? (
+            {(() => {
+              const userInvestments = investments.filter(investment => investment.investorId === currentUserId)
+              return userInvestments.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
                   <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -1152,7 +1158,7 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                 </CardContent>
               </Card>
             ) : (
-              investments.map((investment) => (
+                userInvestments.map((investment) => (
                 <Card key={investment.id}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -1181,7 +1187,8 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                   </CardContent>
                 </Card>
               ))
-            )}
+              )
+            })()}
           </div>
         </TabsContent>
 
@@ -1189,6 +1196,7 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
           <StudentGradesDisplay 
             currentUserEmail={currentUserEmail}
             currentUserId={currentUserId}
+            courseId={courseId}
           />
           
           {/* Interest Breakdown */}

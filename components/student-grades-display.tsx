@@ -32,9 +32,10 @@ interface Grade {
 interface StudentGradesDisplayProps {
   currentUserEmail: string
   currentUserId?: string
+  courseId?: string
 }
 
-export default function StudentGradesDisplay({ currentUserEmail, currentUserId }: StudentGradesDisplayProps) {
+export default function StudentGradesDisplay({ currentUserEmail, currentUserId, courseId }: StudentGradesDisplayProps) {
   const [grades, setGrades] = useState<Grade[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,14 +49,15 @@ export default function StudentGradesDisplay({ currentUserEmail, currentUserId }
       setLoading(true)
       setError(null)
       
-      if (!currentUserId) {
-        setGrades([])
-        return
-      }
+        if (!currentUserId) {
+          setGrades([])
+          return
+        }
       
       // Fetch both grades and interest data
+      const gradesUrl = courseId ? `/api/grades?courseId=${courseId}` : '/api/grades'
       const [gradesResponse, interestResponse] = await Promise.all([
-        fetch('/api/grades'),
+        fetch(gradesUrl),
         fetch(`/api/student-interest?studentId=${currentUserId}`)
       ])
       

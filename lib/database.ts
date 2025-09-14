@@ -147,7 +147,6 @@ export const getTeams = async () => {
     console.error('❌ Supabase error:', error)
     throw error
   }
-  console.log('📊 Teams query result:', data)
   
   // Map database fields to TypeScript interface
   const mappedTeams = (data || []).map((team: any) => ({
@@ -160,7 +159,6 @@ export const getTeams = async () => {
     updatedAt: new Date(team.updated_at)
   }))
   
-  console.log('📊 Mapped teams:', mappedTeams)
   return mappedTeams
 }
 
@@ -968,8 +966,6 @@ export const getEvaluationAssignmentsByEvaluator = async (evaluatorId: string) =
   
   if (error) throw error
   
-  console.log(`🔍 Evaluations for student ${evaluatorId}:`, data?.length || 0, 'assignments')
-  console.log('🔍 Raw evaluation data:', data)
   
   // Transform the data to match the expected interface
   const transformedEvaluations = (data || []).map((evaluation: any) => ({
@@ -999,12 +995,6 @@ export const getEvaluationAssignmentsByEvaluator = async (evaluatorId: string) =
     }
   }))
   
-  console.log(`🔍 Transformed evaluations for student ${evaluatorId}:`, transformedEvaluations.map(e => ({
-    id: e.id,
-    teamId: e.teamId,
-    teamName: e.team.name,
-    isComplete: e.isComplete
-  })))
   
   return transformedEvaluations
 }
@@ -1040,8 +1030,6 @@ export const getEvaluationAssignmentsByEvaluatorTeam = async (evaluatorTeamId: s
   
   if (error) throw error
   
-  console.log(`🔍 Team evaluations for team ${evaluatorTeamId}:`, data?.length || 0, 'assignments')
-  console.log('🔍 Raw team evaluation data:', data)
   
   // Transform the data to match the expected interface
   const transformedEvaluations = (data || []).map((evaluation: any) => ({
@@ -1078,12 +1066,6 @@ export const getEvaluationAssignmentsByEvaluatorTeam = async (evaluatorTeamId: s
     }
   }))
   
-  console.log(`🔍 Transformed team evaluations for team ${evaluatorTeamId}:`, transformedEvaluations.map(e => ({
-    id: e.id,
-    teamId: e.teamId,
-    teamName: e.team.name,
-    isComplete: e.isComplete
-  })))
   
   return transformedEvaluations
 }
@@ -1168,10 +1150,6 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
   
   if (submissionsError) throw submissionsError
   
-  console.log(`📊 Found ${students?.length || 0} students, ${teams?.length || 0} teams, ${submissions?.length || 0} submissions`)
-  console.log('📊 All students:', students?.map(s => ({ id: s.id, email: s.email, name: s.name })))
-  console.log('📊 Submissions by team:', submissions?.map(s => ({ id: s.id, team_id: s.team_id })))
-  console.log('📊 All teams:', teams?.map(t => ({ id: t.id, name: t.name, members: t.members })))
   
   // Helper function to find which team a student belongs to
   const findStudentTeam = (studentId: string) => {
@@ -1223,9 +1201,6 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
     team.members && team.members.length > 0
   ) || []
   
-  console.log(`🎯 Starting team-based evaluation assignment for ${teamsWithStudents.length} teams with ${evaluationsPerStudent} evaluations per team`)
-  console.log(`📊 Teams with submissions: ${Array.from(teamsWithSubmissions)}`)
-  console.log(`📊 Teams with students: ${teamsWithStudents.map(t => t.name)}`)
   
   for (const team of teamsWithStudents) {
     // Filter out submissions from this team's own submissions
@@ -1233,10 +1208,8 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
       submission.team_id !== team.id
     )
     
-    console.log(`🔍 Team ${team.name} (${team.id}): ${otherTeamSubmissions.length} other team submissions available`)
     
     if (otherTeamSubmissions.length === 0) {
-      console.log(`⚠️ No other team submissions available for team ${team.name}`)
       skippedTeams++
       continue
     }
@@ -1247,7 +1220,6 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
     const shuffledSubmissions = [...otherTeamSubmissions].sort(() => Math.random() - 0.5)
     const assignedSubmissions = shuffledSubmissions.slice(0, Math.min(evaluationsPerStudent, shuffledSubmissions.length))
     
-    console.log(`📝 Team ${team.name} assigned to evaluate ${assignedSubmissions.length} submissions from other teams`)
     
     // Create one evaluation per team per submission (not per student)
     for (const submission of assignedSubmissions) {
@@ -1284,8 +1256,6 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
     }
   })
   
-  console.log('📊 Distribution Summary:', distributionSummary)
-  console.log(`📊 Final Results: ${processedTeams} teams processed, ${skippedTeams} teams skipped, ${evaluationAssignments.length} total evaluations created`)
 
   // Update assignment status to evaluation phase
   const { error: updateError } = await supabase
@@ -1333,12 +1303,16 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
   
   
   // Clear existing grades for this assignment
-  const { error: clearError } = await getSupabaseClient()
+  const { error: clearError, count: deletedCount } = await getSupabaseClient()
     .from('grades')
-    .delete()
+    .delete({ count: 'exact' })
     .eq('assignment_id', assignmentId)
   
-  if (clearError) throw clearError
+  if (clearError) {
+    console.error('❌ Error clearing existing grades:', clearError)
+    throw clearError
+  }
+  
   
   const grades = []
   
@@ -1354,8 +1328,6 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
   
   if (investmentsError) throw investmentsError
   
-  console.log(`💰 Found ${allInvestments?.length || 0} investments for assignment ${assignmentId}`)
-  console.log('📊 Investment data:', allInvestments)
   
   // Group investments by team_id for efficient lookup
   const investmentsByTeam = (allInvestments || []).reduce((acc, inv) => {
@@ -1370,7 +1342,6 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
     return acc
   }, {} as Record<string, Array<{ amount: number, is_incomplete: boolean }>>)
   
-  console.log('🏆 Investments grouped by team:', investmentsByTeam)
   
   // Calculate grades for each submission
   for (const submission of submissions) {
@@ -1388,7 +1359,8 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
         average_investment: 0,
         grade: 'incomplete',
         percentage: 0,
-        total_investments: 0
+        total_investments: 0,
+        status: 'draft'
       })
       continue
     }
@@ -1402,7 +1374,8 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
         average_investment: 0,
         grade: 'incomplete',
         percentage: 0,
-        total_investments: investments.length
+        total_investments: investments.length,
+        status: 'draft'
       })
       continue
     }
@@ -1420,7 +1393,8 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
         average_investment: average,
         grade: 'low', // Default to low if insufficient data
         percentage: 60,
-        total_investments: amounts.length
+        total_investments: amounts.length,
+        status: 'draft'
       })
       continue
     }
@@ -1448,7 +1422,8 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
       average_investment: average,
       grade,
       percentage,
-      total_investments: amounts.length
+      total_investments: amounts.length,
+      status: 'draft'
     })
   }
   
@@ -1458,9 +1433,11 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
     .insert(grades)
     .select()
   
-  if (insertError) throw insertError
+  if (insertError) {
+    console.error('Error inserting grades:', insertError)
+    throw insertError
+  }
   
-  console.log(`✅ Created ${createdGrades?.length || 0} grades`)
   
   // Calculate interest for all students who invested in this assignment
   try {
@@ -1604,6 +1581,32 @@ export const getAllGradesWithTeams = async () => {
         due_date
       )
     `)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+// Get grades for a specific course
+export const getGradesByCourse = async (courseId: string) => {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('grades')
+    .select(`
+      *,
+      teams:team_id (
+        id,
+        name,
+        members
+      ),
+      assignments:assignment_id (
+        id,
+        title,
+        due_date,
+        course_id
+      )
+    `)
+    .eq('assignments.course_id', courseId)
     .order('created_at', { ascending: false })
   
   if (error) throw error
