@@ -1333,12 +1333,19 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
   
   
   // Clear existing grades for this assignment
-  const { error: clearError } = await getSupabaseClient()
+  console.log(`🗑️  Clearing existing grades for assignment ${assignmentId}`)
+  const { error: clearError, count: deletedCount } = await getSupabaseClient()
     .from('grades')
     .delete()
     .eq('assignment_id', assignmentId)
+    .select('*', { count: 'exact' })
   
-  if (clearError) throw clearError
+  if (clearError) {
+    console.error('❌ Error clearing existing grades:', clearError)
+    throw clearError
+  }
+  
+  console.log(`✅ Cleared ${deletedCount || 0} existing grades`)
   
   const grades = []
   
@@ -1388,7 +1395,8 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
         average_investment: 0,
         grade: 'incomplete',
         percentage: 0,
-        total_investments: 0
+        total_investments: 0,
+        status: 'draft'
       })
       continue
     }
@@ -1402,7 +1410,8 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
         average_investment: 0,
         grade: 'incomplete',
         percentage: 0,
-        total_investments: investments.length
+        total_investments: investments.length,
+        status: 'draft'
       })
       continue
     }
@@ -1420,7 +1429,8 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
         average_investment: average,
         grade: 'low', // Default to low if insufficient data
         percentage: 60,
-        total_investments: amounts.length
+        total_investments: amounts.length,
+        status: 'draft'
       })
       continue
     }
@@ -1448,9 +1458,17 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
       average_investment: average,
       grade,
       percentage,
-      total_investments: amounts.length
+      total_investments: amounts.length,
+      status: 'draft'
     })
   }
+  
+  // Debug: Log the grades we're about to insert
+  console.log('📝 About to insert grades:', grades.map(g => ({ 
+    assignment_id: g.assignment_id, 
+    team_id: g.team_id, 
+    status: g.status 
+  })))
   
   // Insert all grades
   const { data: createdGrades, error: insertError } = await getSupabaseClient()
@@ -1458,7 +1476,11 @@ export const calculateGradesForAssignment = async (assignmentId: string) => {
     .insert(grades)
     .select()
   
-  if (insertError) throw insertError
+  if (insertError) {
+    console.error('❌ Error inserting grades:', insertError)
+    console.error('Grades that failed:', grades)
+    throw insertError
+  }
   
   console.log(`✅ Created ${createdGrades?.length || 0} grades`)
   
@@ -1604,6 +1626,32 @@ export const getAllGradesWithTeams = async () => {
         due_date
       )
     `)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+// Get grades for a specific course
+export const getGradesByCourse = async (courseId: string) => {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('grades')
+    .select(`
+      *,
+      teams:team_id (
+        id,
+        name,
+        members
+      ),
+      assignments:assignment_id (
+        id,
+        title,
+        due_date,
+        course_id
+      )
+    `)
+    .eq('assignments.course_id', courseId)
     .order('created_at', { ascending: false })
   
   if (error) throw error
