@@ -1107,28 +1107,35 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Click on any submission to view details and status.
             </p>
-            {submissions.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Submissions</h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    You haven't submitted any work for this course yet.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              submissions.map((submission) => {
-                const assignment = assignments.find(a => a.id === submission.assignmentId)
-                return (
-                  <ExpandableSubmissionCard
-                    key={submission.id}
-                    submission={submission}
-                    assignment={assignment || { id: submission.assignmentId, title: 'Unknown Assignment' } as Assignment}
-                  />
-                )
-              })
-            )}
+            {(() => {
+              // Find the current user's team
+              const userTeam = teams.find(team => team.members?.includes(currentUserId))
+              const userSubmissions = userTeam 
+                ? submissions.filter(submission => submission.teamId === userTeam.id)
+                : []
+              return userSubmissions.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Submissions</h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      You haven't submitted any work for this course yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                userSubmissions.map((submission) => {
+                  const assignment = assignments.find(a => a.id === submission.assignmentId)
+                  return (
+                    <ExpandableSubmissionCard
+                      key={submission.id}
+                      submission={submission}
+                      assignment={assignment || { id: submission.assignmentId, title: 'Unknown Assignment' } as Assignment}
+                    />
+                  )
+                })
+              )
+            })()}
           </div>
         </TabsContent>
 
@@ -1141,47 +1148,50 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
 
         <TabsContent value="investments" className="space-y-4">
           <div className="grid gap-4">
-            {investments.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Investments</h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    You haven't made any investments yet.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              investments.map((investment) => (
-                <Card key={investment.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">
-                          {assignments.find(a => a.id === investment.assignmentId)?.title || 'Unknown Assignment'}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          Investment: {investment.amount} tokens
-                        </CardDescription>
-                      </div>
-                      <Badge variant={investment.isIncomplete ? 'destructive' : 'default'}>
-                        {investment.isIncomplete ? 'Incomplete' : 'Complete'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {investment.comments && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        {investment.comments}
-                      </p>
-                    )}
-                    <div className="text-sm text-gray-500">
-                      Date: {investment.createdAt ? formatDate(investment.createdAt.toString()) : 'Unknown'}
-                    </div>
+            {(() => {
+              const userInvestments = investments.filter(investment => investment.investorId === currentUserId)
+              return userInvestments.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Investments</h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      You haven't made any investments yet.
+                    </p>
                   </CardContent>
                 </Card>
-              ))
-            )}
+              ) : (
+                userInvestments.map((investment) => (
+                  <Card key={investment.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">
+                            {assignments.find(a => a.id === investment.assignmentId)?.title || 'Unknown Assignment'}
+                          </CardTitle>
+                          <CardDescription className="mt-1">
+                            Investment: {investment.amount} tokens
+                          </CardDescription>
+                        </div>
+                        <Badge variant={investment.isIncomplete ? 'destructive' : 'default'}>
+                          {investment.isIncomplete ? 'Incomplete' : 'Complete'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {investment.comments && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          {investment.comments}
+                        </p>
+                      )}
+                      <div className="text-sm text-gray-500">
+                        Date: {investment.createdAt ? formatDate(investment.createdAt.toString()) : 'Unknown'}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )
+            })()}
           </div>
         </TabsContent>
 
