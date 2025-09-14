@@ -11,9 +11,16 @@ const supabase = createClient(
 
 // Validation schema for enrollment
 const enrollmentSchema = z.object({
-  userEmails: z.array(z.string().email()).min(1, 'At least one email is required'),
+  userEmails: z.array(z.string().email()).optional(),
+  userIds: z.array(z.string().uuid()).optional(),
   role: z.enum(['student', 'instructor', 'ta']),
-});
+}).refine(
+  (data) => data.userEmails?.length || data.userIds?.length,
+  {
+    message: "Either userEmails or userIds must be provided",
+    path: ["userEmails", "userIds"],
+  }
+);
 
 // GET /api/courses/[id]/enrollments - Get enrollments for a course
 export async function GET(
@@ -127,7 +134,7 @@ export async function POST(
       );
     }
 
-    const { userEmails, role } = validation.data;
+    const { userEmails, userIds, role } = validation.data;
 
     // Check if user is the instructor of this course
     const { data: course, error: courseError } = await supabase
@@ -150,32 +157,67 @@ export async function POST(
       );
     }
 
-    // Get user IDs for the provided emails
-    const { data: users, error: usersError } = await supabase
-      .from('users')
-      .select('id, email, name')
-      .in('email', userEmails);
+    let users: any[] = [];
+    let notFoundEmails: string[] = [];
 
-    if (usersError) {
-      console.error('Error fetching users:', usersError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch users' },
-        { status: 500 }
-      );
-    }
+    if (userEmails && userEmails.length > 0) {
+      // Get user IDs for the provided emails
+      const { data: usersByEmail, error: usersError } = await supabase
+        .from('users')
+        .select('id, email, name')
+        .in('email', userEmails);
 
-    const foundEmails = users?.map(user => user.email) || [];
-    const notFoundEmails = userEmails.filter(email => !foundEmails.includes(email));
+      if (usersError) {
+        console.error('Error fetching users by email:', usersError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to fetch users' },
+          { status: 500 }
+        );
+      }
 
-    if (notFoundEmails.length > 0) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Some users not found',
-          details: `Users not found: ${notFoundEmails.join(', ')}`
-        },
-        { status: 400 }
-      );
+      users = usersByEmail || [];
+      const foundEmails = users.map(user => user.email);
+      notFoundEmails = userEmails.filter(email => !foundEmails.includes(email));
+
+      if (notFoundEmails.length > 0) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Some users not found',
+            details: `Users not found: ${notFoundEmails.join(', ')}`
+          },
+          { status: 400 }
+        );
+      }
+    } else if (userIds && userIds.length > 0) {
+      // Get users by provided IDs
+      const { data: usersById, error: usersError } = await supabase
+        .from('users')
+        .select('id, email, name')
+        .in('id', userIds);
+
+      if (usersError) {
+        console.error('Error fetching users by ID:', usersError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to fetch users' },
+          { status: 500 }
+        );
+      }
+
+      users = usersById || [];
+      const foundIds = users.map(user => user.id);
+      const notFoundIds = userIds.filter(id => !foundIds.includes(id));
+
+      if (notFoundIds.length > 0) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Some users not found',
+            details: `User IDs not found: ${notFoundIds.join(', ')}`
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Check for existing enrollments
@@ -242,7 +284,7 @@ export async function POST(
           email: user.email,
           name: user.name
         })),
-        notFound: notFoundEmails
+        notFound: userEmails ? notFoundEmails : []
       },
       message: `Successfully enrolled ${newUsers.length} user(s)`
     };
@@ -251,6 +293,98 @@ export async function POST(
 
   } catch (error) {
     console.error('Error in POST /api/courses/[id]/enrollments:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/courses/[id]/enrollments - Remove user from course
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { id: courseId } = await params;
+    const body = await request.json();
+    const { userId } = body;
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if user has access to this course (instructor or admin)
+    const { data: course, error: courseError } = await supabase
+      .from('courses')
+      .select('instructor_id')
+      .eq('id', courseId)
+      .single();
+
+    if (courseError || !course) {
+      return NextResponse.json(
+        { success: false, error: 'Course not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if user is instructor or admin
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('email', session.user.email)
+      .single();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const isInstructor = course.instructor_id === session.user.email;
+    const isAdmin = user.role === 'admin';
+
+    if (!isInstructor && !isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized to remove users from this course' },
+        { status: 403 }
+      );
+    }
+
+    // Remove the enrollment
+    const { error: deleteError } = await supabase
+      .from('course_enrollments')
+      .delete()
+      .eq('course_id', courseId)
+      .eq('user_id', userId);
+
+    if (deleteError) {
+      console.error('Error removing enrollment:', deleteError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to remove user from course' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'User removed from course successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in DELETE /api/courses/[id]/enrollments:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
