@@ -83,9 +83,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    if (studentIds.length !== 2) {
+    if (studentIds.length < 1 || studentIds.length > 2) {
       return NextResponse.json({ 
-        error: 'Teams must have exactly 2 students' 
+        error: 'Teams must have 1-2 students' 
       }, { status: 400 })
     }
     

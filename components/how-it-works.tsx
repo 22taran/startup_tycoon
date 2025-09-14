@@ -32,7 +32,7 @@ const steps = [
     title: 'Form Assignment Teams',
     description: 'Create or join teams for each assignment. Teams can change between assignments.',
     details: [
-      'Exactly 2 students per team',
+      '1-2 students per team (solo or paired)',
       'Different teams for different assignments',
       'Teams lock once submission is made',
       'Change teams before submission deadline'

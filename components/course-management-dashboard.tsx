@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Assignment } from '@/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   ArrowLeft,
   BookOpen, 
@@ -24,7 +23,8 @@ import {
   Target,
   GraduationCap,
   Clock,
-  CheckCircle
+  CheckCircle,
+  UserX
 } from 'lucide-react'
 import { AssignmentKanban } from './assignment-kanban'
 import GradesDisplay from './grades-display'
@@ -37,11 +37,10 @@ import { SetEvaluationDeadlineModal } from './set-evaluation-deadline-modal'
 import { EvaluationStatusTable } from './evaluation-status-table'
 import GradesInterestReport from './grades-interest-report'
 import { Course, CourseEnrollment } from '@/types'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EasyUserPicker } from './easy-user-picker'
+import { QuickEnrollForm } from './quick-enroll-form'
+import { RemoveUserModal } from './remove-user-modal'
 
 interface CourseManagementDashboardProps {
   courseId: string
@@ -75,20 +74,20 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false)
   const [showManageTeamsModal, setShowManageTeamsModal] = useState(false)
   const [showEnrollModal, setShowEnrollModal] = useState(false)
-  const [enrollmentEmails, setEnrollmentEmails] = useState('')
-  const [enrollmentRole, setEnrollmentRole] = useState<'student' | 'instructor' | 'ta'>('student')
-  const [enrolling, setEnrolling] = useState(false)
+  const [showRemoveModal, setShowRemoveModal] = useState(false)
+  const [userToRemove, setUserToRemove] = useState<any>(null)
   const [distributing, setDistributing] = useState<string | null>(null)
   const [distributionStatus, setDistributionStatus] = useState<Record<string, boolean>>({})
   const [showEvaluationDeadlineModal, setShowEvaluationDeadlineModal] = useState(false)
   const [selectedAssignmentForDistribution, setSelectedAssignmentForDistribution] = useState<Assignment | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    fetchCourseData()
-  }, [courseId])
+  // Create a stable reference for excluded user IDs
+  const excludedUserIds = useMemo(() => {
+    return course?.enrollments?.map(e => (e as any).user_id) || []
+  }, [course?.enrollments])
 
-  const fetchCourseData = async () => {
+  const fetchCourseData = useCallback(async () => {
     try {
       setLoading(true)
       console.log('🔄 fetchCourseData called')
@@ -137,6 +136,90 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
       console.error('Error fetching course data:', error)
     } finally {
       setLoading(false)
+    }
+  }, [courseId])
+
+  useEffect(() => {
+    fetchCourseData()
+  }, [courseId, fetchCourseData])
+
+  const handleEnroll = async (userIds: string[], role: string) => {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/enrollments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userIds: userIds,
+          role: role
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to enroll users')
+      }
+
+      // Refresh course data
+      await fetchCourseData()
+    } catch (error) {
+      console.error('Error enrolling users:', error)
+      throw error
+    }
+  }
+
+  const handleEnrollByEmail = async (emails: string[], role: string) => {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/enrollments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userEmails: emails,
+          role: role
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to enroll users')
+      }
+
+      // Refresh course data
+      await fetchCourseData()
+    } catch (error) {
+      console.error('Error enrolling users:', error)
+      throw error
+    }
+  }
+
+  const handleRemoveUser = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/enrollments`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to remove user')
+      }
+
+      // Refresh course data
+      await fetchCourseData()
+    } catch (error) {
+      console.error('Error removing user:', error)
+      throw error
     }
   }
 
@@ -206,46 +289,6 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
     }
   }
 
-  const handleEnrollStudents = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!enrollmentEmails.trim()) return
-
-    setEnrolling(true)
-    try {
-      // Parse email addresses (one per line)
-      const emails = enrollmentEmails
-        .split('\n')
-        .map(email => email.trim())
-        .filter(email => email.length > 0)
-
-      const response = await fetch(`/api/courses/${courseId}/enrollments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userEmails: emails,
-          role: enrollmentRole
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setEnrollmentEmails('')
-        setEnrollmentRole('student')
-        setShowEnrollModal(false)
-        fetchCourseData() // Refresh course data
-      } else {
-        alert(data.error || 'Failed to enroll students')
-      }
-    } catch (error) {
-      console.error('Error enrolling students:', error)
-      alert('An error occurred while enrolling students')
-    } finally {
-      setEnrolling(false)
-    }
-  }
 
 
   if (loading) {
@@ -628,6 +671,13 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
             </Button>
           </div>
           
+          {/* Quick Enroll Form */}
+          <QuickEnrollForm
+            courseId={courseId}
+            onEnroll={handleEnrollByEmail}
+            onSuccess={fetchCourseData}
+          />
+
           <Card>
             <CardContent className="p-6">
               <div className="space-y-4">
@@ -659,8 +709,35 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
                             <Badge variant={enrollment.status === 'active' ? 'default' : 'secondary'}>
                               {enrollment.status}
                             </Badge>
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setUserToRemove({
+                                  id: (enrollment as any).user_id,
+                                  name: enrollment.user?.name || 'Unknown',
+                                  email: enrollment.user?.email || '',
+                                  role: enrollment.role
+                                })
+                                setShowRemoveModal(true)
+                              }}
+                            >
                               <Settings className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => {
+                                setUserToRemove({
+                                  id: (enrollment as any).user_id,
+                                  name: enrollment.user?.name || 'Unknown',
+                                  email: enrollment.user?.email || '',
+                                  role: enrollment.role
+                                })
+                                setShowRemoveModal(true)
+                              }}
+                            >
+                              <UserX className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -938,58 +1015,23 @@ export function CourseManagementDashboard({ courseId, currentUserEmail, userRole
       />
 
       {/* Enroll Students Modal */}
-      <Dialog open={showEnrollModal} onOpenChange={setShowEnrollModal}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Enroll Students</DialogTitle>
-            <DialogDescription>
-              Add students to {course?.name} by entering their email addresses.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEnrollStudents} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={enrollmentRole} onValueChange={(value: 'student' | 'instructor' | 'ta') => setEnrollmentRole(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="instructor">Instructor</SelectItem>
-                  <SelectItem value="ta">Teaching Assistant</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="emails">Email Addresses</Label>
-              <Textarea
-                id="emails"
-                value={enrollmentEmails}
-                onChange={(e) => setEnrollmentEmails(e.target.value)}
-                placeholder="Enter email addresses, one per line:&#10;student1@example.com&#10;student2@example.com"
-                rows={6}
-                required
-              />
-              <p className="text-sm text-gray-500">
-                Enter one email address per line
-              </p>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setShowEnrollModal(false)}
-                disabled={enrolling}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={enrolling}>
-                {enrolling ? 'Enrolling...' : 'Enroll Students'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <EasyUserPicker
+        open={showEnrollModal}
+        onOpenChange={setShowEnrollModal}
+        courseId={courseId}
+        courseName={course?.name || ''}
+        onEnroll={handleEnroll}
+        enrolledUserIds={excludedUserIds}
+      />
+
+      {/* Remove User Modal */}
+      <RemoveUserModal
+        open={showRemoveModal}
+        onOpenChange={setShowRemoveModal}
+        user={userToRemove}
+        courseName={course?.name || ''}
+        onRemove={handleRemoveUser}
+      />
     </div>
   )
 }

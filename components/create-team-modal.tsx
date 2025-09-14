@@ -162,7 +162,7 @@ export function CreateTeamModal({ open, onOpenChange, onTeamCreated, currentUser
                 placeholder="Enter additional member emails separated by commas"
               />
               <p className="text-xs text-gray-500">
-                Optional: Add up to 1 additional team member (comma-separated)
+                Optional: Add up to 1 additional team member (comma-separated). Leave empty for solo submission.
               </p>
             </div>
           </div>

@@ -22,30 +22,22 @@ export async function GET(request: NextRequest) {
       grades = await getAllGradesWithTeams()
     }
 
-    // Debug: Log the raw grades data
-    console.log('📊 Raw grades data:', grades)
-    
     // Transform database fields to frontend format
-    const transformedGrades = grades.map(grade => {
-      console.log('📊 Individual grade data:', grade)
-      console.log('📊 Teams data:', grade.teams)
-      
-      return {
-        id: grade.id,
-        assignmentId: grade.assignment_id,
-        teamId: grade.team_id,
-        submissionId: grade.submission_id,
-        averageInvestment: grade.average_investment,
-        grade: grade.grade,
-        percentage: grade.percentage,
-        totalInvestments: grade.total_investments,
-        createdAt: grade.created_at,
-        updatedAt: grade.updated_at,
-        // Include related data if present
-        team: grade.teams,
-        assignment: grade.assignments
-      }
-    })
+    const transformedGrades = grades.map(grade => ({
+      id: grade.id,
+      assignmentId: grade.assignment_id,
+      teamId: grade.team_id,
+      submissionId: grade.submission_id,
+      averageInvestment: grade.average_investment,
+      grade: grade.grade,
+      percentage: grade.percentage,
+      totalInvestments: grade.total_investments,
+      createdAt: grade.created_at,
+      updatedAt: grade.updated_at,
+      // Include related data if present
+      team: grade.teams,
+      assignment: grade.assignments
+    }))
 
     return NextResponse.json({ 
       success: true, 
