@@ -31,7 +31,7 @@ interface StudentAssignmentKanbanProps {
   teams: any[]
   currentUserEmail: string
   currentUserId: string
-  onAssignmentAction: (assignment: Assignment, action: 'submit' | 'view-grades') => void
+  onAssignmentAction: (assignment: Assignment, action: 'submit' | 'view-grades' | 'evaluate') => void
 }
 
 type AssignmentStage = 'to-do' | 'in-progress' | 'evaluation' | 'completed'
@@ -399,6 +399,15 @@ export function StudentAssignmentKanban({
                     Submit Work
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="w-full text-xs h-7"
+                  onClick={() => onAssignmentAction(assignment, 'evaluate')}
+                >
+                  <DollarSign className="h-3 w-3 mr-1" />
+                  Invest in Teams
+                </Button>
               </div>
             )}
 

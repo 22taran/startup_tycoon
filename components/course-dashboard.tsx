@@ -1022,12 +1022,14 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             teams={teams}
             currentUserEmail={currentUserEmail}
             currentUserId={currentUserId}
-            onAssignmentAction={(assignment: Assignment, action: 'submit' | 'view-grades') => {
+            onAssignmentAction={(assignment: Assignment, action: 'submit' | 'view-grades' | 'evaluate') => {
               if (action === 'submit') {
                 setSelectedAssignment(assignment)
                 setShowSubmitModal(true)
               } else if (action === 'view-grades') {
                 setActiveTab('grades')
+              } else if (action === 'evaluate') {
+                setActiveTab('evaluations')
               }
             }}
           />
