@@ -540,7 +540,8 @@ export const notificationService = NotificationService.getInstance()
 // Helper functions for common notification scenarios
 export async function sendForgotPasswordEmail(email: string, userName: string, resetToken: string) {
   const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-  const resetLink = `${baseUrl}/reset-password?token=${resetToken}`
+  const basePath = process.env.BASE_PATH || ''
+  const resetLink = `${baseUrl}${basePath}/reset-password?token=${resetToken}`
   
   return await notificationService.sendEmail({
     to: email,
@@ -594,7 +595,8 @@ export async function sendAssignmentStartedNotification(
   })
   
   const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-  const assignmentLink = `${baseUrl}/courses/${courseId}/assignments/${assignmentId}`
+  const basePath = process.env.BASE_PATH || ''
+  const assignmentLink = `${baseUrl}${basePath}/courses/${courseId}/assignments/${assignmentId}`
   
   return await notificationService.sendEmail({
     to: emails,
@@ -662,7 +664,8 @@ export async function sendEvaluationStartedNotification(
     : 'TBD'
   
   const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-  const evaluationLink = `${baseUrl}/courses/${courseId}/evaluations/${assignmentId}`
+  const basePath = process.env.BASE_PATH || ''
+  const evaluationLink = `${baseUrl}${basePath}/courses/${courseId}/evaluations/${assignmentId}`
   
   return await notificationService.sendEmail({
     to: emails,
