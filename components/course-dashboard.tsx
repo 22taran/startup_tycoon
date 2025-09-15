@@ -535,8 +535,26 @@ function ExpandableEvaluationCard({ assignment, assignmentNumber, currentUserId 
 
   const getAssignmentStatus = () => {
     const now = new Date()
-    const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null
     
+    // For evaluations, check evaluation due date, not assignment due date
+    const evaluationDueDate = assignment.evaluationDueDate ? new Date(assignment.evaluationDueDate) : null
+    const evaluationStartDate = assignment.evaluationStartDate ? new Date(assignment.evaluationStartDate) : null
+    
+    // If evaluation phase is active, check evaluation dates
+    if (assignment.isEvaluationActive) {
+      if (evaluationDueDate && evaluationDueDate < now) {
+        return <Badge variant="destructive">Evaluation Overdue</Badge>
+      } else if (evaluationStartDate && evaluationStartDate > now) {
+        return <Badge variant="secondary">Evaluation Not Started</Badge>
+      } else if (evaluationStartDate && evaluationDueDate && now >= evaluationStartDate && now <= evaluationDueDate) {
+        return <Badge variant="default">Evaluation Active</Badge>
+      } else {
+        return <Badge variant="outline">Evaluation Phase</Badge>
+      }
+    }
+    
+    // Fallback to assignment due date if no evaluation dates
+    const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null
     if (dueDate && dueDate < now) {
       return <Badge variant="destructive">Overdue</Badge>
     }
@@ -568,7 +586,7 @@ function ExpandableEvaluationCard({ assignment, assignmentNumber, currentUserId 
               <CardDescription className="flex items-center space-x-4 mt-1">
                 <span className="flex items-center space-x-1">
                   <Calendar className="h-3 w-3" />
-                  <span>Due: {assignment.dueDate ? `${new Date(assignment.dueDate).toLocaleDateString()} ${new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD'}</span>
+                  <span>Due: {assignment.evaluationDueDate ? `${new Date(assignment.evaluationDueDate).toLocaleDateString()} ${new Date(assignment.evaluationDueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : (assignment.dueDate ? `${new Date(assignment.dueDate).toLocaleDateString()} ${new Date(assignment.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'TBD')}</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <Target className="h-3 w-3" />
@@ -1102,12 +1120,12 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                     const assignmentNumber = match ? parseInt(match[1]) : 1;
                     
                     return (
-                      <ExpandableEvaluationCard
-                        key={assignment.id}
-                        assignment={assignment}
+                  <ExpandableEvaluationCard
+                    key={assignment.id}
+                    assignment={assignment}
                         assignmentNumber={assignmentNumber}
-                        currentUserId={currentUserId}
-                      />
+                    currentUserId={currentUserId}
+                  />
                     );
                   });
                 })()}

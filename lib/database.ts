@@ -356,6 +356,9 @@ export const getAssignmentById = async (id: string) => {
     dueDate: new Date(data.due_date),
     documentUrl: data.document_url,
     isActive: data.is_active,
+    evaluationStartDate: data.evaluation_start_date ? new Date(data.evaluation_start_date) : null,
+    evaluationDueDate: data.evaluation_due_date ? new Date(data.evaluation_due_date) : null,
+    isEvaluationActive: data.is_evaluation_active,
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at)
   }

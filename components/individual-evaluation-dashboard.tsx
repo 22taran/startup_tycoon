@@ -17,6 +17,7 @@ interface IndividualEvaluationDashboardProps {
 export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: IndividualEvaluationDashboardProps) {
   const [evaluations, setEvaluations] = useState<AssignmentEvaluation[]>([])
   const [investments, setInvestments] = useState<AssignmentInvestment[]>([])
+  const [assignment, setAssignment] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [investing, setInvesting] = useState<string | null>(null)
@@ -30,14 +31,16 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
     try {
       setLoading(true)
       
-      const [evaluationsRes, investmentsRes] = await Promise.all([
+      const [evaluationsRes, investmentsRes, assignmentRes] = await Promise.all([
         fetch(`/api/student-evaluations?assignmentId=${assignmentId}`),
-        fetch(`/api/student-investments?assignmentId=${assignmentId}`)
+        fetch(`/api/student-investments?assignmentId=${assignmentId}`),
+        fetch(`/api/assignments/${assignmentId}`)
       ])
 
-      const [evaluationsData, investmentsData] = await Promise.all([
+      const [evaluationsData, investmentsData, assignmentData] = await Promise.all([
         evaluationsRes.json(),
-        investmentsRes.json()
+        investmentsRes.json(),
+        assignmentRes.json()
       ])
 
       if (evaluationsData.success) {
@@ -47,6 +50,10 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
       if (investmentsData.success) {
         setInvestments(investmentsData.data)
       }
+
+      if (assignmentData.success) {
+        setAssignment(assignmentData.data)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -54,11 +61,26 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
     }
   }
 
+  const isInvestmentAllowed = () => {
+    if (!assignment?.evaluationDueDate) return true // Allow if no evaluation due date set
+    
+    const evaluationDueDate = new Date(assignment.evaluationDueDate)
+    const now = new Date()
+    
+    return now <= evaluationDueDate
+  }
+
   const handleInvestment = async (evaluationId: string, teamId: string) => {
     const tokens = investmentAmount[teamId]
     
     if (!tokens || tokens < 10 || tokens > 50) {
       alert('Please enter a valid investment amount (10-50 tokens)')
+      return
+    }
+
+    if (!isInvestmentAllowed()) {
+      const evaluationDueDate = new Date(assignment.evaluationDueDate)
+      alert(`Investment period has ended. Evaluation due date was ${evaluationDueDate.toLocaleDateString()} at ${evaluationDueDate.toLocaleTimeString()}`)
       return
     }
 
@@ -260,7 +282,7 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
                     )}
 
                     {/* Investment Section */}
-                    {evaluation.evaluationStatus === 'assigned' && canInvestMore() && (
+                    {evaluation.evaluationStatus === 'assigned' && canInvestMore() && isInvestmentAllowed() && (
                       <div className="border-t pt-4">
                         <Label className="text-sm font-medium">Investment</Label>
                         <div className="flex items-center space-x-2 mt-2">
@@ -287,6 +309,20 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
                         <p className="text-xs text-gray-500 mt-1">
                           Minimum: 10 tokens, Maximum: 50 tokens
                         </p>
+                      </div>
+                    )}
+
+                    {/* Investment Period Ended Message */}
+                    {evaluation.evaluationStatus === 'assigned' && canInvestMore() && !isInvestmentAllowed() && (
+                      <div className="border-t pt-4">
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                          <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                            Investment period has ended
+                          </p>
+                          <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                            Evaluation due date: {assignment?.evaluationDueDate ? new Date(assignment.evaluationDueDate).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
                       </div>
                     )}
 
