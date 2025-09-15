@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,9 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Lock, CheckCircle } from 'lucide-react'
 
 export default function ResetPasswordPage() {
-  const searchParams = useSearchParams()
   const router = useRouter()
-  const token = searchParams.get('token')
+  const [token, setToken] = useState<string | null>(null)
   
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -23,17 +22,27 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (token) {
-      verifyToken()
+    // Get token from URL
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const urlToken = urlParams.get('token')
+      setToken(urlToken)
+      
+      if (urlToken) {
+        verifyToken(urlToken)
+      } else {
+        setVerifying(false)
+        setError('No reset token provided')
+      }
     } else {
       setVerifying(false)
       setError('No reset token provided')
     }
-  }, [token])
+  }, [])
 
-  const verifyToken = async () => {
+  const verifyToken = async (tokenToVerify: string) => {
     try {
-      const response = await fetch(`/api/auth/reset-password?token=${token}`)
+      const response = await fetch(`/api/auth/reset-password?token=${tokenToVerify}`)
       const data = await response.json()
       
       if (data.success) {
