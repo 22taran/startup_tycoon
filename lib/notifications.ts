@@ -541,7 +541,8 @@ export const notificationService = NotificationService.getInstance()
 export async function sendForgotPasswordEmail(email: string, userName: string, resetToken: string) {
   // Vercel automatically sets NEXTAUTH_URL, fallback to localhost for development
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-  const resetLink = `${baseUrl}/reset-password?token=${resetToken}`
+  const basePath = process.env.BASE_PATH || '/startup-tycoon'
+  const resetLink = `${baseUrl}${basePath}/reset-password?token=${resetToken}`
   
   return await notificationService.sendEmail({
     to: email,
