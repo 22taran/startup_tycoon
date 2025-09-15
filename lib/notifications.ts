@@ -104,31 +104,31 @@ export class NotificationService {
   private getTemplate(templateName: string, data: Record<string, any>): EmailTemplate {
     switch (templateName) {
       case 'forgot-password':
-        return this.getForgotPasswordTemplate(data)
+        return this.getForgotPasswordTemplate(data as { userName: string; resetLink: string })
       case 'assignment-started':
-        return this.getAssignmentStartedTemplate(data)
+        return this.getAssignmentStartedTemplate(data as { userName: string; assignmentTitle: string; courseName: string; dueDate: string; assignmentLink: string })
       case 'evaluation-started':
-        return this.getEvaluationStartedTemplate(data)
+        return this.getEvaluationStartedTemplate(data as { userName: string; assignmentTitle: string; courseName: string; evaluationDueDate: string; evaluationLink: string })
       case 'assignment-due-reminder':
-        return this.getAssignmentDueReminderTemplate(data)
+        return this.getAssignmentDueReminderTemplate(data as { userName: string; assignmentTitle: string; courseName: string; dueDate: string; hoursLeft: number; assignmentLink: string })
       case 'evaluation-due-reminder':
-        return this.getEvaluationDueReminderTemplate(data)
+        return this.getEvaluationDueReminderTemplate(data as { userName: string; assignmentTitle: string; courseName: string; evaluationDueDate: string; hoursLeft: number; evaluationLink: string })
       case 'team-invitation':
-        return this.getTeamInvitationTemplate(data)
+        return this.getTeamInvitationTemplate(data as { userName: string; inviterName: string; teamName: string; courseName: string; invitationLink: string })
       case 'grade-published':
-        return this.getGradePublishedTemplate(data)
+        return this.getGradePublishedTemplate(data as { userName: string; assignmentTitle: string; courseName: string; grade: number; feedback: string; gradesLink: string })
       default:
         return this.getDefaultTemplate(data)
     }
   }
 
-  private getForgotPasswordTemplate(data: { name: string; resetLink: string }): EmailTemplate {
+  private getForgotPasswordTemplate(data: { userName: string; resetLink: string }): EmailTemplate {
     return {
       subject: 'Reset Your Password - Startup Tycoon',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">Reset Your Password</h2>
-          <p>Hello ${data.name},</p>
+          <p>Hello ${data.userName},</p>
           <p>You requested to reset your password for your Startup Tycoon account.</p>
           <p>Click the button below to reset your password:</p>
           <div style="text-align: center; margin: 30px 0;">
@@ -148,7 +148,7 @@ export class NotificationService {
       text: `
         Reset Your Password - Startup Tycoon
         
-        Hello ${data.name},
+        Hello ${data.userName},
         
         You requested to reset your password for your Startup Tycoon account.
         
@@ -166,7 +166,7 @@ export class NotificationService {
   }
 
   private getAssignmentStartedTemplate(data: { 
-    name: string; 
+    userName: string; 
     assignmentTitle: string; 
     courseName: string; 
     dueDate: string;
@@ -177,7 +177,7 @@ export class NotificationService {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">New Assignment Available!</h2>
-          <p>Hello ${data.name},</p>
+          <p>Hello ${data.userName},</p>
           <p>A new assignment has been posted in <strong>${data.courseName}</strong>:</p>
           
           <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -202,7 +202,7 @@ export class NotificationService {
       text: `
         New Assignment: ${data.assignmentTitle} - ${data.courseName}
         
-        Hello ${data.name},
+        Hello ${data.userName},
         
         A new assignment has been posted in ${data.courseName}:
         
@@ -220,7 +220,7 @@ export class NotificationService {
   }
 
   private getEvaluationStartedTemplate(data: { 
-    name: string; 
+    userName: string; 
     assignmentTitle: string; 
     courseName: string; 
     evaluationDueDate: string;
@@ -231,7 +231,7 @@ export class NotificationService {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #dc2626;">Evaluation Phase Started!</h2>
-          <p>Hello ${data.name},</p>
+          <p>Hello ${data.userName},</p>
           <p>The evaluation phase has begun for <strong>${data.assignmentTitle}</strong> in <strong>${data.courseName}</strong>.</p>
           
           <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
@@ -257,7 +257,7 @@ export class NotificationService {
       text: `
         Evaluation Phase Started: ${data.assignmentTitle} - ${data.courseName}
         
-        Hello ${data.name},
+        Hello ${data.userName},
         
         The evaluation phase has begun for ${data.assignmentTitle} in ${data.courseName}.
         
@@ -277,7 +277,7 @@ export class NotificationService {
   }
 
   private getAssignmentDueReminderTemplate(data: { 
-    name: string; 
+    userName: string; 
     assignmentTitle: string; 
     courseName: string; 
     dueDate: string;
@@ -289,7 +289,7 @@ export class NotificationService {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #f59e0b;">Assignment Due Soon!</h2>
-          <p>Hello ${data.name},</p>
+          <p>Hello ${data.userName},</p>
           <p>This is a friendly reminder that your assignment is due soon:</p>
           
           <div style="background-color: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
@@ -315,7 +315,7 @@ export class NotificationService {
       text: `
         Reminder: ${data.assignmentTitle} due in ${data.hoursLeft} hours
         
-        Hello ${data.name},
+        Hello ${data.userName},
         
         This is a friendly reminder that your assignment is due soon:
         
@@ -334,7 +334,7 @@ export class NotificationService {
   }
 
   private getEvaluationDueReminderTemplate(data: { 
-    name: string; 
+    userName: string; 
     assignmentTitle: string; 
     courseName: string; 
     evaluationDueDate: string;
@@ -346,7 +346,7 @@ export class NotificationService {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #dc2626;">Evaluation Due Soon!</h2>
-          <p>Hello ${data.name},</p>
+          <p>Hello ${data.userName},</p>
           <p>This is a reminder that the evaluation phase is ending soon:</p>
           
           <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
@@ -372,7 +372,7 @@ export class NotificationService {
       text: `
         Reminder: Evaluation for ${data.assignmentTitle} due in ${data.hoursLeft} hours
         
-        Hello ${data.name},
+        Hello ${data.userName},
         
         This is a reminder that the evaluation phase is ending soon:
         
@@ -391,7 +391,7 @@ export class NotificationService {
   }
 
   private getTeamInvitationTemplate(data: { 
-    name: string; 
+    userName: string; 
     inviterName: string; 
     teamName: string; 
     courseName: string;
@@ -402,7 +402,7 @@ export class NotificationService {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">Team Invitation</h2>
-          <p>Hello ${data.name},</p>
+          <p>Hello ${data.userName},</p>
           <p><strong>${data.inviterName}</strong> has invited you to join their team:</p>
           
           <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb;">
@@ -427,7 +427,7 @@ export class NotificationService {
       text: `
         Team Invitation: ${data.teamName} - ${data.courseName}
         
-        Hello ${data.name},
+        Hello ${data.userName},
         
         ${data.inviterName} has invited you to join their team:
         
@@ -445,7 +445,7 @@ export class NotificationService {
   }
 
   private getGradePublishedTemplate(data: { 
-    name: string; 
+    userName: string; 
     assignmentTitle: string; 
     courseName: string; 
     grade: number;
@@ -457,7 +457,7 @@ export class NotificationService {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #059669;">Grades Published!</h2>
-          <p>Hello ${data.name},</p>
+          <p>Hello ${data.userName},</p>
           <p>Your grades for <strong>${data.assignmentTitle}</strong> in <strong>${data.courseName}</strong> have been published:</p>
           
           <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
@@ -483,7 +483,7 @@ export class NotificationService {
       text: `
         Grades Published: ${data.assignmentTitle} - ${data.courseName}
         
-        Hello ${data.name},
+        Hello ${data.userName},
         
         Your grades for ${data.assignmentTitle} in ${data.courseName} have been published:
         
@@ -538,14 +538,14 @@ export class NotificationService {
 export const notificationService = NotificationService.getInstance()
 
 // Helper functions for common notification scenarios
-export async function sendForgotPasswordEmail(email: string, name: string, resetToken: string) {
+export async function sendForgotPasswordEmail(email: string, userName: string, resetToken: string) {
   const resetLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`
   
   return await notificationService.sendEmail({
     to: email,
     subject: 'Reset Your Password - Startup Tycoon',
     template: 'forgot-password',
-    data: { name, resetLink }
+    data: { userName, resetLink }
   })
 }
 
@@ -580,7 +580,7 @@ export async function sendAssignmentStartedNotification(
   
   if (!enrollments || enrollments.length === 0) return false
   
-  const students = enrollments.map(e => e.users).filter(Boolean)
+  const students = enrollments.flatMap(e => e.users).filter(Boolean)
   const emails = students.map(s => s.email)
   
   const dueDate = new Date().toLocaleDateString('en-US', {
@@ -645,7 +645,7 @@ export async function sendEvaluationStartedNotification(
   
   if (!enrollments || enrollments.length === 0) return false
   
-  const students = enrollments.map(e => e.users).filter(Boolean)
+  const students = enrollments.flatMap(e => e.users).filter(Boolean)
   const emails = students.map(s => s.email)
   
   const evaluationDueDate = assignment.evaluation_due_date 
