@@ -115,6 +115,46 @@ export const deleteUser = async (id: string) => {
 export const createTeam = async (teamData: Omit<Team, 'id' | 'createdAt' | 'updatedAt'>) => {
   const supabase = getSupabaseClient()
   
+  // Check if any student is already in a team for this course
+  if (teamData.courseId && teamData.members && teamData.members.length > 0) {
+    const { data: existingTeams, error: checkError } = await supabase
+      .from('teams')
+      .select('id, name, members')
+      .eq('course_id', teamData.courseId)
+      .not('members', 'is', null)
+    
+    if (checkError) throw checkError
+    
+    // Check if any of the new team members are already in other teams
+    const conflictingStudentIds: string[] = []
+    if (existingTeams) {
+      for (const team of existingTeams) {
+        for (const newMember of teamData.members) {
+          if (team.members && team.members.includes(newMember)) {
+            // Check if the student is solo in their current team
+            const isSolo = team.members.length === 1
+            if (!isSolo) {
+              conflictingStudentIds.push(newMember)
+            }
+          }
+        }
+      }
+    }
+    
+    if (conflictingStudentIds.length > 0) {
+      // Convert user IDs to email addresses for better error message
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', conflictingStudentIds)
+      
+      if (usersError) throw usersError
+      
+      const conflictingEmails = users?.map(user => user.email) || conflictingStudentIds
+      throw new Error(`Students ${conflictingEmails.join(', ')} are already in teams for this course`)
+    }
+  }
+  
   // Map camelCase to snake_case for database
   const dbTeamData = {
     name: teamData.name,
@@ -186,6 +226,60 @@ export const getTeamById = async (id: string) => {
 
 export const updateTeam = async (id: string, teamData: Partial<Team>) => {
   const supabase = getSupabaseClient()
+  
+  // Check if any student is already in a team for this course (when updating members)
+  if (teamData.members && teamData.members.length > 0) {
+    // Get current team's course_id
+    const { data: currentTeam, error: currentTeamError } = await supabase
+      .from('teams')
+      .select('course_id')
+      .eq('id', id)
+      .single()
+    
+    if (currentTeamError) throw currentTeamError
+    
+    const courseId = teamData.courseId || currentTeam.course_id
+    
+    if (courseId) {
+      const { data: existingTeams, error: checkError } = await supabase
+        .from('teams')
+        .select('id, name, members')
+        .eq('course_id', courseId)
+        .neq('id', id) // Exclude current team
+        .not('members', 'is', null)
+      
+      if (checkError) throw checkError
+      
+      // Check if any of the new team members are already in other teams
+      const conflictingStudentIds: string[] = []
+      if (existingTeams) {
+        for (const team of existingTeams) {
+          for (const newMember of teamData.members) {
+            if (team.members && team.members.includes(newMember)) {
+              // Check if the student is solo in their current team
+              const isSolo = team.members.length === 1
+              if (!isSolo) {
+                conflictingStudentIds.push(newMember)
+              }
+            }
+          }
+        }
+      }
+      
+      if (conflictingStudentIds.length > 0) {
+        // Convert user IDs to email addresses for better error message
+        const { data: users, error: usersError } = await supabase
+          .from('users')
+          .select('id, email')
+          .in('id', conflictingStudentIds)
+        
+        if (usersError) throw usersError
+        
+        const conflictingEmails = users?.map(user => user.email) || conflictingStudentIds
+        throw new Error(`Students ${conflictingEmails.join(', ')} are already in teams for this course`)
+      }
+    }
+  }
   
   // Map camelCase to snake_case for database
   const dbTeamData: any = {}

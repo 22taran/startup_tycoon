@@ -110,8 +110,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating team:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to create team' },
-      { status: 500 }
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to create team' 
+      },
+      { status: 400 }
     )
   }
 }
@@ -166,8 +169,11 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating team:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to update team' },
-      { status: 500 }
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to update team' 
+      },
+      { status: 400 }
     )
   }
 }
