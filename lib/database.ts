@@ -1208,8 +1208,14 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
       submission.team_id !== team.id
     )
     
+    console.log(`🔍 Team ${team.name} (${team.id}):`)
+    console.log(`   - Team members: ${team.members?.join(', ') || 'none'}`)
+    console.log(`   - Total submissions: ${submissions.length}`)
+    console.log(`   - Other team submissions: ${otherTeamSubmissions.length}`)
+    console.log(`   - Other team IDs: ${otherTeamSubmissions.map(s => s.team_id).join(', ')}`)
     
     if (otherTeamSubmissions.length === 0) {
+      console.log(`⚠️ Skipping team ${team.name} - no other team submissions`)
       skippedTeams++
       continue
     }

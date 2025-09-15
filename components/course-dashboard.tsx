@@ -1091,14 +1091,26 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
             </p>
             {assignments.length > 0 ? (
               <div className="space-y-4">
-                {assignments.map((assignment) => (
-                  <ExpandableEvaluationCard
-                    key={assignment.id}
-                    assignment={assignment}
-                    assignmentNumber={assignments.indexOf(assignment) + 1}
-                    currentUserId={currentUserId}
-                  />
-                ))}
+                {(() => {
+                  // Sort assignments by creation date (newest first) for consistent display
+                  const sortedAssignments = [...assignments]
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  
+                  return sortedAssignments.map((assignment) => {
+                    // Extract assignment number from the title (e.g., "Assignment 3" -> 3)
+                    const match = assignment.title.match(/Assignment\s*(\d+)/i);
+                    const assignmentNumber = match ? parseInt(match[1]) : 1;
+                    
+                    return (
+                      <ExpandableEvaluationCard
+                        key={assignment.id}
+                        assignment={assignment}
+                        assignmentNumber={assignmentNumber}
+                        currentUserId={currentUserId}
+                      />
+                    );
+                  });
+                })()}
               </div>
             ) : (
               <Card>

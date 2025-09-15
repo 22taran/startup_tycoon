@@ -44,15 +44,26 @@ export const distributeEvaluationsToStudents = async (
     .eq('assignment_id', assignmentId)
     .eq('status', 'submitted')
   
+  // Type assertion to fix TypeScript inference issue
+  const typedSubmissions = submissions as Array<{
+    id: string
+    team_id: string
+    teams: {
+      id: string
+      name: string
+      members: string[]
+    }[]
+  }>
+  
   if (submissionsError) throw submissionsError
   
-  console.log(`📊 Found ${students?.length || 0} students, ${submissions?.length || 0} submissions`)
+  console.log(`📊 Found ${students?.length || 0} students, ${typedSubmissions?.length || 0} submissions`)
   
   if (!students || students.length === 0) {
     throw new Error('No students found for evaluation distribution')
   }
   
-  if (!submissions || submissions.length < 5) {
+  if (!typedSubmissions || typedSubmissions.length < 5) {
     throw new Error('Need at least 5 team submissions for evaluation distribution')
   }
   
@@ -88,12 +99,19 @@ export const distributeEvaluationsToStudents = async (
   
   for (const student of students) {
     // Get teams that this student is NOT part of
-    const studentTeams = submissions.filter(sub => 
+    const studentTeams = typedSubmissions.filter(sub => 
       sub.teams?.[0]?.members?.includes(student.user_id)
     )
-    const otherTeamSubmissions = submissions.filter(sub => 
+    const otherTeamSubmissions = typedSubmissions.filter(sub => 
       !sub.teams?.[0]?.members?.includes(student.user_id)
     )
+    
+    console.log(`🔍 Student ${student.users?.[0]?.email} (${student.user_id}):`)
+    console.log(`   - Student's teams: ${studentTeams.length}`)
+    console.log(`   - Other team submissions: ${otherTeamSubmissions.length}`)
+    console.log(`   - Student team IDs: ${studentTeams.map(t => t.team_id).join(', ')}`)
+    console.log(`   - Other team IDs: ${otherTeamSubmissions.map(t => t.team_id).join(', ')}`)
+    console.log(`   - All submission team members:`, typedSubmissions.map(s => ({ teamId: s.team_id, members: s.teams?.[0]?.members })))
     
     if (otherTeamSubmissions.length < evaluationsPerStudent) {
       console.warn(`⚠️ Not enough other teams for student ${student.users?.[0]?.email}`)
@@ -105,6 +123,16 @@ export const distributeEvaluationsToStudents = async (
     const selectedSubmissions = shuffledSubmissions.slice(0, evaluationsPerStudent)
     
     for (const submission of selectedSubmissions) {
+      // Double-check: Ensure student is not evaluating their own team
+      const isSelfEvaluation = submission.teams?.[0]?.members?.includes(student.user_id)
+      if (isSelfEvaluation) {
+        console.error(`❌ CRITICAL BUG: Student ${student.users?.[0]?.email} is being assigned their own team for evaluation!`)
+        console.error(`   - Student ID: ${student.user_id}`)
+        console.error(`   - Team ID: ${submission.team_id}`)
+        console.error(`   - Team members: ${submission.teams?.[0]?.members}`)
+        continue // Skip this assignment
+      }
+      
       evaluationAssignments.push({
         assignment_id: assignmentId,
         evaluator_student_id: student.user_id,
@@ -117,6 +145,25 @@ export const distributeEvaluationsToStudents = async (
     
     console.log(`📝 Assigned ${selectedSubmissions.length} evaluations to student ${student.users?.[0]?.email}`)
   }
+  
+  // Final verification: Check for any self-evaluations before inserting
+  console.log(`🔍 Final verification: Checking ${evaluationAssignments.length} evaluation assignments for self-evaluations...`)
+  
+  const selfEvaluations = evaluationAssignments.filter(evaluation => {
+    // Find the submission to check if the evaluator is in the evaluated team
+    const submission = typedSubmissions.find(s => s.id === evaluation.submission_id)
+    return submission?.teams?.[0]?.members?.includes(evaluation.evaluator_student_id)
+  })
+  
+  if (selfEvaluations.length > 0) {
+    console.error(`❌ CRITICAL: Found ${selfEvaluations.length} self-evaluations that would be created!`)
+    selfEvaluations.forEach(evaluation => {
+      console.error(`   - Student ${evaluation.evaluator_student_id} evaluating team ${evaluation.evaluated_team_id}`)
+    })
+    throw new Error(`Prevented creation of ${selfEvaluations.length} self-evaluations. This indicates a bug in the filtering logic.`)
+  }
+  
+  console.log(`✅ Verification passed: No self-evaluations found`)
   
   // Insert all evaluation assignments
   const { data: createdEvaluations, error: insertError } = await supabase
