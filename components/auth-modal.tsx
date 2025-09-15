@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
+import { ForgotPasswordModal } from './forgot-password-modal'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -27,6 +28,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
   const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [showPassword, setShowPassword] = useState(false)
   const [loginStep, setLoginStep] = useState<'idle' | 'authenticating' | 'redirecting'>('idle')
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
 
   // Sign up form state
   const [signUpData, setSignUpData] = useState({
@@ -314,6 +316,17 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                       )}
                     </div>
 
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="p-0 h-auto text-sm text-blue-600 hover:text-blue-800"
+                        onClick={() => setShowForgotPassword(true)}
+                      >
+                        Forgot your password?
+                      </Button>
+                    </div>
+
                     <Button type="submit" className="w-full" disabled={loading || !isSignInFormValid}>
                       {loading ? (
                         <>
@@ -469,6 +482,12 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
           )}
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        open={showForgotPassword}
+        onOpenChange={setShowForgotPassword}
+      />
     </div>
   )
 }
