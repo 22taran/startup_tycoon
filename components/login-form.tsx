@@ -37,9 +37,9 @@ export default function LoginForm() {
       } else if (result?.ok) {
         setLoginStep('redirecting');
         
-        // Use router.replace for faster navigation (no history entry)
-        // Default to dashboard, middleware will handle admin redirect if needed
-        router.replace('/dashboard');
+        // Force a page refresh to ensure session is updated, then let the home page handle role-based redirects
+        // This is more reliable than trying to access session immediately after login
+        window.location.href = '/';
       }
     } catch (error) {
       setError('An error occurred. Please try again.');

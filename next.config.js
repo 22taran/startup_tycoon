@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  // Set base path if deploying to a subdirectory
-  // basePath: process.env.BASE_PATH || '',
-  // assetPrefix: process.env.ASSET_PREFIX || '',
+  // Note: basePath and assetPrefix removed to fix NextAuth API routes
+  // If you need subdirectory deployment, configure it in Vercel settings instead
   
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
