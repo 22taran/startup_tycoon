@@ -217,10 +217,10 @@ export function AssignmentKanban({
     return acc
   }, {} as Record<AssignmentStage, Assignment[]>)
 
-  // Sort assignments within each stage by creation date
+  // Sort assignments within each stage by creation date (newest first)
   Object.keys(assignmentsByStage).forEach(stage => {
     assignmentsByStage[stage as AssignmentStage].sort((a, b) => 
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
   })
 
