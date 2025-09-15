@@ -109,11 +109,7 @@ In your browser's developer tools:
 
 **Vercel:**
 - Make sure `NEXTAUTH_URL` is set in environment variables
-- If deployed to a subdirectory (e.g., `/startup-tycoon/`), set:
-  - `BASE_PATH=/startup-tycoon`
-  - `ASSET_PREFIX=/startup-tycoon`
-- Set `NEXTAUTH_URL=https://yourdomain.com/startup-tycoon` (include the subdirectory)
-- The `vercel.json` file is included for proper static file serving
+- No additional configuration needed
 
 **Netlify:**
 - Add `_redirects` file in `public/` folder:

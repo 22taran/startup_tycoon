@@ -2,8 +2,8 @@
 
 const nextConfig = {
   // Set base path if deploying to a subdirectory
-  basePath: process.env.BASE_PATH || '/startup-tycoon',
-  assetPrefix: process.env.ASSET_PREFIX || '/startup-tycoon',
+  // basePath: process.env.BASE_PATH || '',
+  // assetPrefix: process.env.ASSET_PREFIX || '',
   
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
