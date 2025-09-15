@@ -27,6 +27,7 @@ interface EditTeamModalProps {
     members: string[]
   }
   currentUserEmail?: string
+  allUsers?: any[]
   onTeamUpdated?: () => void
 }
 
@@ -37,6 +38,7 @@ export function EditTeamModal({
   allowEditing = false, 
   teamData, 
   currentUserEmail,
+  allUsers = [],
   onTeamUpdated 
 }: EditTeamModalProps) {
   const [formData, setFormData] = useState({
@@ -48,17 +50,27 @@ export function EditTeamModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Helper function to convert user IDs to emails
+  const getUserEmail = (userId: string) => {
+    const user = allUsers.find(u => u.id === userId)
+    return user ? user.email : userId
+  }
+
   // Update form data when teamData changes
   useEffect(() => {
-    if (teamData) {
+    if (teamData && allUsers.length > 0) {
+      // Convert user IDs to emails for display
+      const memberEmails = teamData.members?.map(getUserEmail) || []
+      const otherMembers = memberEmails.filter(email => email !== currentUserEmail)
+      
       setFormData({
         name: teamData.name || '',
         description: teamData.description || '',
         member1Email: currentUserEmail || '',
-        member2Email: teamData.members?.filter(m => m !== currentUserEmail).join(', ') || ''
+        member2Email: otherMembers.join(', ')
       })
     }
-  }, [teamData, currentUserEmail])
+  }, [teamData, currentUserEmail, allUsers])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -83,12 +95,13 @@ export function EditTeamModal({
       
       const members = [currentUserEmail, ...additionalMembers]
 
-      const response = await fetch(`/api/teams/${teamData.id}`, {
+      const response = await fetch('/api/teams', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          id: teamData.id,
           name: formData.name,
           description: formData.description,
           members: members,

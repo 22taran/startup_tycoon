@@ -164,7 +164,9 @@ function ExpandableAssignmentCard({ assignment, assignmentNumber, currentUserId,
               </Badge>
             </div>
             <div className="flex-1">
-              <CardTitle className="text-xl mb-2">{assignment.title}</CardTitle>
+              <CardTitle className="text-xl mb-2">
+                {assignment.title.replace(/^Assignment \d+\s*/, '') || assignment.title}
+              </CardTitle>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <span className="flex items-center space-x-1">
                   <Calendar className="h-4 w-4" />
@@ -410,7 +412,7 @@ function ExpandableSubmissionCard({ submission, assignment }: ExpandableSubmissi
             </div>
             <div>
               <CardTitle className="text-lg">
-                Submission for {assignment.title}
+                Submission for {assignment.title.replace(/^Assignment \d+\s*/, '') || assignment.title}
               </CardTitle>
               <CardDescription className="flex items-center space-x-4 mt-1">
                 <span className="flex items-center space-x-1">
@@ -508,7 +510,7 @@ function ExpandableSubmissionCard({ submission, assignment }: ExpandableSubmissi
                 </Badge>
               </span>
               <span>
-                Assignment: {assignment.title}
+                Assignment: {assignment.title.replace(/^Assignment \d+\s*/, '') || assignment.title}
               </span>
             </div>
           </div>
@@ -560,7 +562,9 @@ function ExpandableEvaluationCard({ assignment, assignmentNumber, currentUserId 
               </Badge>
             </div>
             <div>
-              <CardTitle className="text-lg">{assignment.title}</CardTitle>
+              <CardTitle className="text-lg">
+                {assignment.title.replace(/^Assignment \d+\s*/, '') || assignment.title}
+              </CardTitle>
               <CardDescription className="flex items-center space-x-4 mt-1">
                 <span className="flex items-center space-x-1">
                   <Calendar className="h-3 w-3" />
@@ -1046,12 +1050,21 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                   </p>
                 </CardContent>
               </Card>
-            ) : (
-              assignments.map((assignment) => (
+            ) : (() => {
+              // Sort assignments by creation date (newest first) for consistent display
+              const sortedAssignments = [...assignments]
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              
+              return sortedAssignments.map((assignment, index) => {
+                // Extract assignment number from the title (e.g., "Assignment 3" -> 3)
+                const match = assignment.title.match(/Assignment\s*(\d+)/i);
+                const assignmentNumber = match ? parseInt(match[1]) : index + 1;
+                
+                return (
                 <ExpandableAssignmentCard
                   key={assignment.id}
                   assignment={assignment}
-                  assignmentNumber={assignments.indexOf(assignment) + 1}
+                  assignmentNumber={assignmentNumber}
                   currentUserId={currentUserId}
                   submissions={submissions}
                   teams={teams}
@@ -1064,8 +1077,9 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
                     }
                   }}
                 />
-              ))
-            )}
+                );
+              })
+            })()}
           </div>
         </TabsContent>
 
@@ -1284,6 +1298,7 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
           allowEditing={canEditTeam}
           teamData={selectedTeam}
           currentUserEmail={currentUserEmail}
+          allUsers={allUsers}
           onTeamUpdated={fetchCourseData}
         />
       )}
