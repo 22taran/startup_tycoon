@@ -260,7 +260,9 @@ export const processStudentInvestment = async (
   assignmentId: string,
   studentId: string,
   teamId: string,
-  tokens: number
+  tokens: number,
+  isIncomplete?: boolean,
+  comments?: string
 ) => {
   const supabase = getSimpleSupabaseClient()
   
@@ -326,7 +328,9 @@ export const processStudentInvestment = async (
       investor_student_id: studentId,
       invested_team_id: teamId,
       tokens_invested: tokens,
-      investment_rank: investmentRank
+      investment_rank: investmentRank,
+      is_incomplete: isIncomplete || false,
+      comments: comments || null
     })
     .select()
     .single()
@@ -374,6 +378,8 @@ export const getStudentInvestments = async (studentId: string, assignmentId: str
     investedTeamId: investment.invested_team_id,
     tokensInvested: investment.tokens_invested,
     investmentRank: investment.investment_rank,
+    isIncomplete: investment.is_incomplete || false,
+    comments: investment.comments || null,
     createdAt: new Date(investment.created_at),
     updatedAt: new Date(investment.updated_at),
     investedTeam: {

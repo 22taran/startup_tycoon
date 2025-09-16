@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { assignmentId, teamId, tokens } = body
+    const { assignmentId, teamId, tokens, isIncomplete, comments } = body
     
     if (!assignmentId || !teamId || tokens === undefined) {
       return NextResponse.json({ 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    const investment = await processStudentInvestment(assignmentId, session.user.id, teamId, tokens)
+    const investment = await processStudentInvestment(assignmentId, session.user.id, teamId, tokens, isIncomplete, comments)
     
     return NextResponse.json({ 
       success: true, 
