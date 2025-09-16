@@ -191,7 +191,7 @@ async function checkIndividualSelfEvaluation(
       return false
     }
     
-    return data.teams.members.includes(studentId)
+    return data.teams?.[0]?.members?.includes(studentId) || false
   } catch {
     return false
   }
@@ -244,15 +244,20 @@ export async function findExistingSelfEvaluations(): Promise<{
           teams!inner(id, members)
         )
       `)
+      .not('evaluator_student_id', 'is', null)
     
-    const individual = individualSelfEvals?.filter(eval => 
-      eval.submissions?.teams?.members?.includes(eval.evaluator_student_id)
-    ).map(eval => ({
-      id: eval.id,
-      evaluator_id: eval.evaluator_student_id,
-      team_id: eval.submissions?.teams?.id,
-      submission_id: eval.submission_id
-    })) || []
+    const individual = individualSelfEvals?.filter(evaluation => {
+      const submission = Array.isArray(evaluation.submissions) ? evaluation.submissions[0] : evaluation.submissions
+      return submission?.teams?.[0]?.members?.includes(evaluation.evaluator_student_id)
+    }).map(evaluation => {
+      const submission = Array.isArray(evaluation.submissions) ? evaluation.submissions[0] : evaluation.submissions
+      return {
+        id: evaluation.id,
+        evaluator_id: evaluation.evaluator_student_id,
+        team_id: submission?.teams?.[0]?.id,
+        submission_id: evaluation.submission_id
+      }
+    }) || []
     
     // Find team self-evaluations
     const { data: teamSelfEvals, error: teamError } = await supabase
@@ -285,7 +290,7 @@ export async function cleanupSelfEvaluations(): Promise<{
     const supabase = getSupabaseClient()
     
     // Clean up individual self-evaluations
-    const { data: individualSelfEvals } = await findExistingSelfEvaluations()
+    const individualSelfEvals = await findExistingSelfEvaluations()
     
     if (individualSelfEvals.individual.length > 0) {
       const { error: deleteIndividualError } = await supabase
