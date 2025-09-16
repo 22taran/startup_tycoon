@@ -33,20 +33,13 @@ export function CreateTeamModal({ open, onOpenChange, onTeamCreated, currentUser
 
   // Update form data when currentUserEmail changes
   useEffect(() => {
-    console.log('🔄 CreateTeamModal: currentUserEmail changed to:', currentUserEmail)
     setFormData(prev => ({
       ...prev,
       member1Email: currentUserEmail
     }))
   }, [currentUserEmail])
 
-  // Debug when modal opens
-  useEffect(() => {
-    if (open) {
-      console.log('🔄 CreateTeamModal: Modal opened with currentUserEmail:', currentUserEmail)
-      console.log('🔄 CreateTeamModal: formData.member1Email:', formData.member1Email)
-    }
-  }, [open, currentUserEmail, formData.member1Email])
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -167,9 +160,10 @@ export function CreateTeamModal({ open, onOpenChange, onTeamCreated, currentUser
             </div>
           </div>
           {error && (
-            <div className="flex items-center gap-2 text-red-600 text-sm mb-4">
+            <div className="flex items-center gap-2 text-red-600 text-sm mb-4 bg-red-50 p-3 rounded-md">
               <AlertCircle className="h-4 w-4" />
-              {error}
+              <span className="font-medium">Error:</span>
+              <span>{error}</span>
             </div>
           )}
           <DialogFooter>

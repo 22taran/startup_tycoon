@@ -74,13 +74,13 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
     const tokens = investmentAmount[teamId]
     
     if (!tokens || tokens < 10 || tokens > 50) {
-      alert('Please enter a valid investment amount (10-50 tokens)')
+      setError('Please enter a valid investment amount (10-50 tokens)')
       return
     }
 
     if (!isInvestmentAllowed()) {
       const evaluationDueDate = new Date(assignment.evaluationDueDate)
-      alert(`Investment period has ended. Evaluation due date was ${evaluationDueDate.toLocaleDateString()} at ${evaluationDueDate.toLocaleTimeString()}`)
+      setError(`Investment period has ended. Evaluation due date was ${evaluationDueDate.toLocaleDateString()} at ${evaluationDueDate.toLocaleTimeString()}`)
       return
     }
 
@@ -105,11 +105,12 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
         // Refresh data
         await fetchData()
         setInvestmentAmount(prev => ({ ...prev, [teamId]: 0 }))
+        setError('') // Clear any previous errors
       } else {
-        alert(data.error || 'Failed to process investment')
+        setError(data.error || 'Failed to process investment')
       }
     } catch (err) {
-      alert('An error occurred while processing investment')
+      setError('An error occurred while processing investment')
     } finally {
       setInvesting(null)
     }
@@ -179,6 +180,19 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
 
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-center text-red-800 dark:text-red-200">
+            <AlertCircle className="h-5 w-5 mr-3" />
+            <div>
+              <p className="font-medium">Error</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Investment Summary */}
       <Card>
         <CardHeader>

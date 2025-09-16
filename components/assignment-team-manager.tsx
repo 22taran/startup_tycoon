@@ -66,6 +66,10 @@ export function AssignmentTeamManager({ assignmentId, currentUserId, userRole }:
     newTeamId: '',
     reason: ''
   })
+  
+  // Error states
+  const [createError, setCreateError] = useState('')
+  const [changeError, setChangeError] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -117,9 +121,10 @@ export function AssignmentTeamManager({ assignmentId, currentUserId, userRole }:
 
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault()
+    setCreateError('')
     
     if (!createForm.teamName || !createForm.partnerEmail) {
-      alert('Please fill in all required fields')
+      setCreateError('Please fill in all required fields')
       return
     }
 
@@ -142,20 +147,22 @@ export function AssignmentTeamManager({ assignmentId, currentUserId, userRole }:
       if (data.success) {
         setShowCreateTeam(false)
         setCreateForm({ teamName: '', description: '', partnerEmail: '' })
+        setCreateError('')
         await fetchData()
       } else {
-        alert(data.error || 'Failed to create team')
+        setCreateError(data.error || 'Failed to create team')
       }
     } catch (err) {
-      alert('An error occurred while creating team')
+      setCreateError('An error occurred while creating team')
     }
   }
 
   const handleChangeTeam = async (e: React.FormEvent) => {
     e.preventDefault()
+    setChangeError('')
     
     if (!changeForm.newTeamId) {
-      alert('Please select a team')
+      setChangeError('Please select a team')
       return
     }
 
@@ -177,12 +184,13 @@ export function AssignmentTeamManager({ assignmentId, currentUserId, userRole }:
       if (data.success) {
         setShowChangeTeam(false)
         setChangeForm({ newTeamId: '', reason: '' })
+        setChangeError('')
         await fetchData()
       } else {
-        alert(data.error || 'Failed to change team')
+        setChangeError(data.error || 'Failed to change team')
       }
     } catch (err) {
-      alert('An error occurred while changing team')
+      setChangeError('An error occurred while changing team')
     }
   }
 
@@ -395,6 +403,12 @@ export function AssignmentTeamManager({ assignmentId, currentUserId, userRole }:
                 />
               </div>
             </div>
+            {createError && (
+              <div className="flex items-center gap-2 text-red-600 text-sm mb-4">
+                <AlertCircle className="h-4 w-4" />
+                {createError}
+              </div>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateTeam(false)}>
                 Cancel
@@ -444,6 +458,12 @@ export function AssignmentTeamManager({ assignmentId, currentUserId, userRole }:
                 />
               </div>
             </div>
+            {changeError && (
+              <div className="flex items-center gap-2 text-red-600 text-sm mb-4">
+                <AlertCircle className="h-4 w-4" />
+                {changeError}
+              </div>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowChangeTeam(false)}>
                 Cancel

@@ -28,6 +28,7 @@ interface EditTeamModalProps {
   }
   currentUserEmail?: string
   allUsers?: any[]
+  courseId?: string
   onTeamUpdated?: () => void
 }
 
@@ -39,6 +40,7 @@ export function EditTeamModal({
   teamData, 
   currentUserEmail,
   allUsers = [],
+  courseId,
   onTeamUpdated 
 }: EditTeamModalProps) {
   const [formData, setFormData] = useState({
@@ -105,6 +107,7 @@ export function EditTeamModal({
           name: formData.name,
           description: formData.description,
           members: members,
+          courseId: courseId
         }),
       })
 
@@ -186,9 +189,10 @@ export function EditTeamModal({
               </div>
             </div>
             {error && (
-              <div className="flex items-center gap-2 text-red-600 text-sm mb-4">
+              <div className="flex items-center gap-2 text-red-600 text-sm mb-4 bg-red-50 p-3 rounded-md">
                 <AlertCircle className="h-4 w-4" />
-                {error}
+                <span className="font-medium">Error:</span>
+                <span>{error}</span>
               </div>
             )}
             <DialogFooter>
