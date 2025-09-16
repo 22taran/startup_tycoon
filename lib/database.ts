@@ -1396,7 +1396,8 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
         evaluator_team_id: team.id, // Team that will evaluate
         submission_id: submission.id,
         team_id: submission.team_id,
-        is_complete: false
+        is_complete: false,
+        due_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days from now
       })
     }
   }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth.config'
 import { distributeEvaluationsToStudents } from '@/lib/individual-evaluation'
+import { validateEvaluationAssignments, cleanupSelfEvaluations } from '@/lib/evaluation-validation'
 
 export async function POST(
   request: NextRequest,
@@ -46,6 +47,34 @@ export async function POST(
       }, { status: 400 })
     }
     
+    // Validate date logic
+    const startDate = new Date(evaluationStartDate)
+    const dueDate = new Date(evaluationDueDate)
+    
+    if (startDate >= dueDate) {
+      return NextResponse.json({ 
+        error: 'Invalid evaluation dates',
+        message: 'Evaluation due date must be after start date'
+      }, { status: 400 })
+    }
+    
+    if (dueDate <= new Date()) {
+      return NextResponse.json({ 
+        error: 'Invalid evaluation dates',
+        message: 'Evaluation due date must be in the future'
+      }, { status: 400 })
+    }
+    
+    // Clean up any existing self-evaluations before distribution
+    console.log('🧹 Cleaning up existing self-evaluations...')
+    const cleanupResult = await cleanupSelfEvaluations()
+    if (cleanupResult.deletedIndividual > 0 || cleanupResult.deletedTeam > 0) {
+      console.log(`✅ Cleaned up ${cleanupResult.deletedIndividual} individual and ${cleanupResult.deletedTeam} team self-evaluations`)
+    }
+    if (cleanupResult.errors.length > 0) {
+      console.warn('⚠️ Cleanup warnings:', cleanupResult.errors)
+    }
+    
     // Distribute evaluations to individual students
     const evaluations = await distributeEvaluationsToStudents(
       assignmentId, 
@@ -53,6 +82,25 @@ export async function POST(
       evaluationStartDate,
       evaluationDueDate
     )
+    
+    // Validate all created evaluations
+    console.log('🔍 Validating created evaluations...')
+    const validationResult = await validateEvaluationAssignments(evaluations)
+    
+    if (validationResult.invalid.length > 0) {
+      console.error('❌ Found invalid evaluations:', validationResult.invalid)
+      return NextResponse.json({
+        success: false,
+        error: 'Some evaluations failed validation',
+        details: validationResult.invalid.map(({ evaluation, result }) => ({
+          evaluation,
+          errors: result.errors,
+          warnings: result.warnings
+        }))
+      }, { status: 400 })
+    }
+    
+    console.log(`✅ All ${validationResult.valid.length} evaluations passed validation`)
     
     return NextResponse.json({
       success: true,

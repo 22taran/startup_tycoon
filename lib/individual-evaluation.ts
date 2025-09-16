@@ -39,7 +39,7 @@ export const distributeEvaluationsToStudents = async (
     .select(`
       id,
       team_id,
-      teams:team_id(id, name, members)
+      teams!inner(id, name, members)
     `)
     .eq('assignment_id', assignmentId)
     .eq('status', 'submitted')
@@ -48,11 +48,11 @@ export const distributeEvaluationsToStudents = async (
   const typedSubmissions = submissions as Array<{
     id: string
     team_id: string
-    teams: {
+    teams: Array<{
       id: string
       name: string
       members: string[]
-    }[]
+    }>
   }>
   
   if (submissionsError) throw submissionsError
