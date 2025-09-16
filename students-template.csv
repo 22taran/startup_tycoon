@@ -1,6 +1,6 @@
-name,email,studentId,courseId
-John Doe,john.doe@university.edu,STU001,
-Jane Smith,jane.smith@university.edu,STU002,
-Bob Johnson,bob.johnson@university.edu,STU003,
-Alice Brown,alice.brown@university.edu,STU004,
-Charlie Wilson,charlie.wilson@university.edu,STU005,
+username	firstname	lastname	email	idnumber	course1	role1
+john.doe	John	Doe	john.doe@university.edu	STU001		student
+jane.smith	Jane	Smith	jane.smith@university.edu	STU002		student
+bob.johnson	Bob	Johnson	bob.johnson@university.edu	STU003		student
+alice.brown	Alice	Brown	alice.brown@university.edu	STU004		student
+charlie.wilson	Charlie	Wilson	charlie.wilson@university.edu	STU005		student

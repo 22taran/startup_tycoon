@@ -34,7 +34,7 @@ This interactive script will:
    cp students-template.csv students.csv
    
    # Edit students.csv with your actual student data
-   # Format: name,email,studentId,courseId
+   # Format: username,firstname,lastname,email,idnumber,course1,role1
    ```
 
 2. **Run the bulk script**:
@@ -63,8 +63,10 @@ This interactive script will:
 
 ### CSV Report
 The bulk script generates a detailed CSV report with:
-- Student names and emails
+- Student names (firstname + lastname)
+- Email addresses
 - Login credentials
+- Student IDs and usernames
 - Creation status
 - Error messages (if any)
 

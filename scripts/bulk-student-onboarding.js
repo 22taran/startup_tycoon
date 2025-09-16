@@ -59,7 +59,7 @@ function generateStudentData() {
 
 /**
  * Load student data from CSV file
- * Expected CSV format: name,email,studentId,courseId
+ * Expected CSV format: username,firstname,lastname,email,idnumber,course1,role1
  */
 function loadStudentsFromCSV(filePath) {
   try {
@@ -67,16 +67,30 @@ function loadStudentsFromCSV(filePath) {
     const lines = csvContent.split('\n').filter(line => line.trim());
     const students = [];
     
+    // Detect separator (tab or comma)
+    const firstLine = lines[0];
+    const isTabSeparated = firstLine.includes('\t');
+    const separator = isTabSeparated ? '\t' : ',';
+    
+    console.log(`📄 Detected ${isTabSeparated ? 'tab' : 'comma'}-separated CSV format`);
+    
     // Skip header row
     for (let i = 1; i < lines.length; i++) {
-      const [name, email, studentId, courseId] = lines[i].split(',').map(field => field.trim());
-      if (name && email) {
-        students.push({
-          name,
-          email,
-          studentId: studentId || null,
-          courseId: courseId || null,
-        });
+      const columns = lines[i].split(separator).map(field => field.trim());
+      
+      if (columns.length >= 4) {
+        const [username, firstname, lastname, email, idnumber, course1, role1] = columns;
+        
+        if (firstname && lastname && email) {
+          students.push({
+            name: `${firstname} ${lastname}`.trim(),
+            email: email,
+            studentId: idnumber || null,
+            courseId: course1 || null,
+            username: username || null,
+            role: role1 || 'student'
+          });
+        }
       }
     }
     
@@ -281,21 +295,21 @@ function generateCSVReport(results, courseId) {
   const filename = `student-onboarding-report-${timestamp}.csv`;
   const filepath = path.join(process.cwd(), filename);
   
-  let csvContent = 'Name,Email,Password,Student ID,Status,Error\n';
+  let csvContent = 'Name,Email,Password,Student ID,Username,Status,Error\n';
   
   // Successful creations
   results.successful.forEach(student => {
-    csvContent += `"${student.name}","${student.email}","${student.password}","${student.studentId || ''}","Created",""\n`;
+    csvContent += `"${student.name}","${student.email}","${student.password}","${student.studentId || ''}","${student.username || ''}","Created",""\n`;
   });
   
   // Already existing
   results.alreadyExists.forEach(student => {
-    csvContent += `"${student.name}","${student.email}","[EXISTING]","${student.studentId || ''}","Already Exists",""\n`;
+    csvContent += `"${student.name}","${student.email}","[EXISTING]","${student.studentId || ''}","${student.username || ''}","Already Exists",""\n`;
   });
   
   // Failed
   results.failed.forEach(student => {
-    csvContent += `"${student.name}","${student.email}","","${student.studentId || ''}","Failed","${student.error}"\n`;
+    csvContent += `"${student.name}","${student.email}","","${student.studentId || ''}","${student.username || ''}","Failed","${student.error}"\n`;
   });
   
   fs.writeFileSync(filepath, csvContent);
