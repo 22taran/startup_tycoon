@@ -539,9 +539,10 @@ export const notificationService = NotificationService.getInstance()
 
 // Helper functions for common notification scenarios
 export async function sendForgotPasswordEmail(email: string, userName: string, resetToken: string) {
-  // Vercel automatically sets NEXTAUTH_URL, fallback to localhost for development
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-  // Remove basePath since we're not using subdirectory deployment anymore
+  // Use Vercel URL for production, fallback to NEXTAUTH_URL for development
+  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
+    : process.env.NEXTAUTH_URL || 'http://localhost:3000'
   const resetLink = `${baseUrl}/reset-password?token=${resetToken}`
   
   return await notificationService.sendEmail({
@@ -595,7 +596,9 @@ export async function sendAssignmentStartedNotification(
     minute: '2-digit'
   })
   
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
+    : process.env.NEXTAUTH_URL || 'http://localhost:3000'
   const assignmentLink = `${baseUrl}/courses/${courseId}/assignments/${assignmentId}`
   
   return await notificationService.sendEmail({
@@ -663,7 +666,9 @@ export async function sendEvaluationStartedNotification(
       })
     : 'TBD'
   
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
+    : process.env.NEXTAUTH_URL || 'http://localhost:3000'
   const evaluationLink = `${baseUrl}/courses/${courseId}/evaluations/${assignmentId}`
   
   return await notificationService.sendEmail({

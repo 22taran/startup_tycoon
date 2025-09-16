@@ -122,3 +122,5 @@ To test the notification system:
 4. Trigger notifications via the API endpoints
 5. Test fallback behavior by setting invalid credentials
 
+
+

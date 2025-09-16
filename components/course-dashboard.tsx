@@ -1329,6 +1329,7 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
           teamData={selectedTeam}
           currentUserEmail={currentUserEmail}
           allUsers={allUsers}
+          courseId={courseId}
           onTeamUpdated={fetchCourseData}
         />
       )}

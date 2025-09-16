@@ -1,6 +1,36 @@
 import { getSupabaseClient, getSimpleSupabaseClient } from './database'
 import { AssignmentTeamMembership, AssignmentTeamChangeHistory } from '@/types'
 
+// Validate that students are enrolled in the course
+const validateStudentCourseEnrollment = async (studentIds: string[], courseId: string) => {
+  const supabase = getSimpleSupabaseClient()
+  
+  const { data: enrollments, error: enrollmentError } = await supabase
+    .from('course_enrollments')
+    .select('user_id, users:user_id(email)')
+    .eq('course_id', courseId)
+    .in('user_id', studentIds)
+    .eq('status', 'active')
+  
+  if (enrollmentError) throw enrollmentError
+  
+  const enrolledIds = enrollments?.map(e => e.user_id) || []
+  const notEnrolled = studentIds.filter(id => !enrolledIds.includes(id))
+  
+  if (notEnrolled.length > 0) {
+    // Get email addresses for better error message
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, email')
+      .in('id', notEnrolled)
+    
+    if (usersError) throw usersError
+    
+    const notEnrolledEmails = users?.map(user => user.email) || notEnrolled
+    throw new Error(`Students ${notEnrolledEmails.join(', ')} are not enrolled in this course`)
+  }
+}
+
 // Create a team for a specific assignment
 export const createAssignmentTeam = async (
   assignmentId: string,
@@ -14,6 +44,21 @@ export const createAssignmentTeam = async (
   if (studentIds.length !== 2) {
     throw new Error('Teams must have exactly 2 students')
   }
+  
+  // Get assignment details to get course_id
+  const { data: assignment, error: assignmentError } = await supabase
+    .from('assignments')
+    .select('course_id')
+    .eq('id', assignmentId)
+    .single()
+  
+  if (assignmentError) throw assignmentError
+  if (!assignment?.course_id) {
+    throw new Error('Assignment not found or not associated with a course')
+  }
+  
+  // Validate that all students are enrolled in the course
+  await validateStudentCourseEnrollment(studentIds, assignment.course_id)
   
   // Check if any student is already in a team for this assignment
   const { data: existingMemberships, error: checkError } = await supabase
@@ -38,7 +83,7 @@ export const createAssignmentTeam = async (
       members: studentIds,
       max_members: 2,
       current_member_count: 2,
-      course_id: null // Will be set based on assignment
+      course_id: assignment.course_id // Set course_id from assignment
     })
     .select()
     .single()

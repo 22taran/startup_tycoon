@@ -146,6 +146,8 @@ export interface AssignmentInvestment {
   investedTeamId: string
   tokensInvested: number // 0-50 tokens
   investmentRank?: number // 1st, 2nd, or 3rd choice
+  isIncomplete?: boolean // Whether the assignment is marked as incomplete
+  comments?: string // Comments explaining why it's incomplete
   createdAt: Date
   updatedAt: Date
   // Additional properties returned by getStudentInvestments

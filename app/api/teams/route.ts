@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
     // Convert email addresses to user IDs
     const memberEmails = Array.isArray(members) ? members : [members]
     const memberUserIds: string[] = []
+    const notFoundEmails: string[] = []
     
     for (const email of memberEmails) {
       if (email.trim()) {
@@ -92,9 +93,20 @@ export async function POST(request: NextRequest) {
         if (user) {
           memberUserIds.push(user.id)
         } else {
-          console.warn(`⚠️ User not found for email: ${email}`)
+          notFoundEmails.push(email.trim())
         }
       }
+    }
+    
+    // Check if any users were not found
+    if (notFoundEmails.length > 0) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Users not found: ${notFoundEmails.join(', ')}. Please check the email addresses and try again.` 
+        },
+        { status: 400 }
+      )
     }
     
     console.log('🔄 Creating team with data:', { name, memberEmails, memberUserIds, description, courseId, created_by: user.id })
@@ -128,7 +140,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, name, members, description } = body
+    const { id, name, members, description, courseId } = body
 
     if (!id || !name || !members) {
       return NextResponse.json(
@@ -140,6 +152,7 @@ export async function PUT(request: NextRequest) {
     // Convert email addresses to user IDs
     const memberEmails = Array.isArray(members) ? members : [members]
     const memberUserIds: string[] = []
+    const notFoundEmails: string[] = []
     
     for (const email of memberEmails) {
       if (email.trim()) {
@@ -152,16 +165,28 @@ export async function PUT(request: NextRequest) {
         if (user) {
           memberUserIds.push(user.id)
         } else {
-          console.warn(`⚠️ User not found for email: ${email}`)
+          notFoundEmails.push(email.trim())
         }
       }
     }
     
-    console.log('🔄 Updating team with data:', { id, name, memberEmails, memberUserIds, description })
+    // Check if any users were not found
+    if (notFoundEmails.length > 0) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Users not found: ${notFoundEmails.join(', ')}. Please check the email addresses and try again.` 
+        },
+        { status: 400 }
+      )
+    }
+    
+    console.log('🔄 Updating team with data:', { id, name, memberEmails, memberUserIds, description, courseId })
     const updatedTeam = await updateTeam(id, {
       name,
       members: memberUserIds,
-      description: description || ''
+      description: description || '',
+      courseId: courseId
     })
     console.log('✅ Team updated successfully:', updatedTeam)
 

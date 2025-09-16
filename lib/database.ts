@@ -115,6 +115,35 @@ export const deleteUser = async (id: string) => {
 export const createTeam = async (teamData: Omit<Team, 'id' | 'createdAt' | 'updatedAt'>) => {
   const supabase = getSupabaseClient()
   
+  // Validate course enrollment if courseId is provided
+  if (teamData.courseId && teamData.members && teamData.members.length > 0) {
+    // Check if all students are enrolled in the course
+    const { data: enrollments, error: enrollmentError } = await supabase
+      .from('course_enrollments')
+      .select('user_id, users:user_id(email)')
+      .eq('course_id', teamData.courseId)
+      .in('user_id', teamData.members)
+      .eq('status', 'active')
+    
+    if (enrollmentError) throw enrollmentError
+    
+    const enrolledIds = enrollments?.map(e => e.user_id) || []
+    const notEnrolled = teamData.members.filter(id => !enrolledIds.includes(id))
+    
+    if (notEnrolled.length > 0) {
+      // Get email addresses for better error message
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', notEnrolled)
+      
+      if (usersError) throw usersError
+      
+      const notEnrolledEmails = users?.map(user => user.email) || notEnrolled
+      throw new Error(`Students ${notEnrolledEmails.join(', ')} are not enrolled in this course`)
+    }
+  }
+  
   // Check if any student is already in a team for this course
   if (teamData.courseId && teamData.members && teamData.members.length > 0) {
     const { data: existingTeams, error: checkError } = await supabase
@@ -241,6 +270,31 @@ export const updateTeam = async (id: string, teamData: Partial<Team>) => {
     const courseId = teamData.courseId || currentTeam.course_id
     
     if (courseId) {
+      // Validate course enrollment for new members
+      const { data: enrollments, error: enrollmentError } = await supabase
+        .from('course_enrollments')
+        .select('user_id, users:user_id(email)')
+        .eq('course_id', courseId)
+        .in('user_id', teamData.members)
+        .eq('status', 'active')
+      
+      if (enrollmentError) throw enrollmentError
+      
+      const enrolledIds = enrollments?.map(e => e.user_id) || []
+      const notEnrolled = teamData.members.filter(id => !enrolledIds.includes(id))
+      
+      if (notEnrolled.length > 0) {
+        // Get email addresses for better error message
+        const { data: users, error: usersError } = await supabase
+          .from('users')
+          .select('id, email')
+          .in('id', notEnrolled)
+        
+        if (usersError) throw usersError
+        
+        const notEnrolledEmails = users?.map(user => user.email) || notEnrolled
+        throw new Error(`Students ${notEnrolledEmails.join(', ')} are not enrolled in this course`)
+      }
       const { data: existingTeams, error: checkError } = await supabase
         .from('teams')
         .select('id, name, members')
@@ -1323,9 +1377,19 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
     const shuffledSubmissions = [...otherTeamSubmissions].sort(() => Math.random() - 0.5)
     const assignedSubmissions = shuffledSubmissions.slice(0, Math.min(evaluationsPerStudent, shuffledSubmissions.length))
     
-    
-    // Create one evaluation per team per submission (not per student)
+    // CRITICAL: Double-check for self-evaluations before creating assignments
     for (const submission of assignedSubmissions) {
+      // Verify this is not a self-evaluation by checking if the submission belongs to the same team
+      const isSelfEvaluation = submission.team_id === team.id
+      
+      if (isSelfEvaluation) {
+        console.error(`❌ CRITICAL BUG: Team ${team.name} (${team.id}) is being assigned to evaluate their own team!`)
+        console.error(`   - Evaluator team ID: ${team.id}`)
+        console.error(`   - Evaluated team ID: ${submission.team_id}`)
+        console.error(`   - Team members: ${team.members}`)
+        continue // Skip this assignment
+      }
+      
       evaluationAssignments.push({
         assignment_id: assignmentId,
         evaluator_id: null, // No individual evaluator for team-based evaluations
@@ -1336,6 +1400,23 @@ export const distributeAssignments = async (assignmentId: string, evaluationsPer
       })
     }
   }
+  
+  // Final verification: Check for any self-evaluations before inserting
+  console.log(`🔍 Final verification: Checking ${evaluationAssignments.length} evaluation assignments for self-evaluations...`)
+  
+  const selfEvaluations = evaluationAssignments.filter(evaluation => {
+    return evaluation.evaluator_team_id === evaluation.team_id
+  })
+  
+  if (selfEvaluations.length > 0) {
+    console.error(`❌ CRITICAL: Found ${selfEvaluations.length} self-evaluations that would be created!`)
+    selfEvaluations.forEach(evaluation => {
+      console.error(`   - Team ${evaluation.evaluator_team_id} evaluating team ${evaluation.team_id}`)
+    })
+    throw new Error(`Prevented creation of ${selfEvaluations.length} self-evaluations. This indicates a bug in the filtering logic.`)
+  }
+  
+  console.log(`✅ Verification passed: No self-evaluations found`)
   
   // Insert all evaluation assignments
   const { data: createdEvaluations, error: insertError } = await supabase

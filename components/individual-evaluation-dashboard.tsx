@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { AlertCircle, CheckCircle, Clock, ExternalLink } from 'lucide-react'
 import { AssignmentEvaluation, AssignmentInvestment } from '@/types'
 
@@ -22,6 +24,8 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
   const [error, setError] = useState('')
   const [investing, setInvesting] = useState<string | null>(null)
   const [investmentAmount, setInvestmentAmount] = useState<Record<string, number>>({})
+  const [isIncomplete, setIsIncomplete] = useState<Record<string, boolean>>({})
+  const [comments, setComments] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetchData()
@@ -72,15 +76,22 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
 
   const handleInvestment = async (evaluationId: string, teamId: string) => {
     const tokens = investmentAmount[teamId]
+    const incomplete = isIncomplete[teamId] || false
+    const comment = comments[teamId] || ''
     
     if (!tokens || tokens < 10 || tokens > 50) {
-      alert('Please enter a valid investment amount (10-50 tokens)')
+      setError('Please enter a valid investment amount (10-50 tokens)')
+      return
+    }
+
+    if (incomplete && !comment.trim()) {
+      setError('Please provide comments when marking assignment as incomplete')
       return
     }
 
     if (!isInvestmentAllowed()) {
       const evaluationDueDate = new Date(assignment.evaluationDueDate)
-      alert(`Investment period has ended. Evaluation due date was ${evaluationDueDate.toLocaleDateString()} at ${evaluationDueDate.toLocaleTimeString()}`)
+      setError(`Investment period has ended. Evaluation due date was ${evaluationDueDate.toLocaleDateString()} at ${evaluationDueDate.toLocaleTimeString()}`)
       return
     }
 
@@ -95,7 +106,9 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
         body: JSON.stringify({
           assignmentId,
           teamId,
-          tokens
+          tokens,
+          isIncomplete: incomplete,
+          comments: comment.trim() || null
         })
       })
 
@@ -105,11 +118,14 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
         // Refresh data
         await fetchData()
         setInvestmentAmount(prev => ({ ...prev, [teamId]: 0 }))
+        setIsIncomplete(prev => ({ ...prev, [teamId]: false }))
+        setComments(prev => ({ ...prev, [teamId]: '' }))
+        setError('') // Clear any previous errors
       } else {
-        alert(data.error || 'Failed to process investment')
+        setError(data.error || 'Failed to process investment')
       }
     } catch (err) {
-      alert('An error occurred while processing investment')
+      setError('An error occurred while processing investment')
     } finally {
       setInvesting(null)
     }
@@ -179,6 +195,19 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
 
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-center text-red-800 dark:text-red-200">
+            <AlertCircle className="h-5 w-5 mr-3" />
+            <div>
+              <p className="font-medium">Error</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Investment Summary */}
       <Card>
         <CardHeader>
@@ -285,30 +314,67 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
                     {evaluation.evaluationStatus === 'assigned' && canInvestMore() && isInvestmentAllowed() && (
                       <div className="border-t pt-4">
                         <Label className="text-sm font-medium">Investment</Label>
-                        <div className="flex items-center space-x-2 mt-2">
-                          <Input
-                            type="number"
-                            min="10"
-                            max="50"
-                            placeholder="10-50 tokens"
-                            value={investmentAmount[evaluation.evaluatedTeamId] || ''}
-                            onChange={(e) => setInvestmentAmount(prev => ({
-                              ...prev,
-                              [evaluation.evaluatedTeamId]: parseInt(e.target.value) || 0
-                            }))}
-                            className="w-32"
-                          />
-                          <Button
-                            onClick={() => handleInvestment(evaluation.id, evaluation.evaluatedTeamId)}
-                            disabled={investing === evaluation.evaluatedTeamId}
-                            size="sm"
-                          >
-                            {investing === evaluation.evaluatedTeamId ? 'Investing...' : 'Invest'}
-                          </Button>
+                        <div className="space-y-4 mt-2">
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              type="number"
+                              min="10"
+                              max="50"
+                              placeholder="10-50 tokens"
+                              value={investmentAmount[evaluation.evaluatedTeamId] || ''}
+                              onChange={(e) => setInvestmentAmount(prev => ({
+                                ...prev,
+                                [evaluation.evaluatedTeamId]: parseInt(e.target.value) || 0
+                              }))}
+                              className="w-32"
+                            />
+                            <Button
+                              onClick={() => handleInvestment(evaluation.id, evaluation.evaluatedTeamId)}
+                              disabled={investing === evaluation.evaluatedTeamId}
+                              size="sm"
+                            >
+                              {investing === evaluation.evaluatedTeamId ? 'Investing...' : 'Invest'}
+                            </Button>
+                          </div>
+                          
+                          {/* Incomplete Toggle */}
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id={`incomplete-${evaluation.evaluatedTeamId}`}
+                              checked={isIncomplete[evaluation.evaluatedTeamId] || false}
+                              onCheckedChange={(checked) => setIsIncomplete(prev => ({
+                                ...prev,
+                                [evaluation.evaluatedTeamId]: checked
+                              }))}
+                            />
+                            <Label htmlFor={`incomplete-${evaluation.evaluatedTeamId}`} className="text-sm">
+                              Mark as incomplete
+                            </Label>
+                          </div>
+                          
+                          {/* Comments Section */}
+                          {isIncomplete[evaluation.evaluatedTeamId] && (
+                            <div className="space-y-2">
+                              <Label htmlFor={`comments-${evaluation.evaluatedTeamId}`} className="text-sm font-medium">
+                                Comments (Required for incomplete assignments)
+                              </Label>
+                              <Textarea
+                                id={`comments-${evaluation.evaluatedTeamId}`}
+                                placeholder="Please explain why this assignment is incomplete..."
+                                value={comments[evaluation.evaluatedTeamId] || ''}
+                                onChange={(e) => setComments(prev => ({
+                                  ...prev,
+                                  [evaluation.evaluatedTeamId]: e.target.value
+                                }))}
+                                className="min-h-[80px]"
+                              />
+                            </div>
+                          )}
+                          
+                          <p className="text-xs text-gray-500">
+                            Minimum: 10 tokens, Maximum: 50 tokens
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Minimum: 10 tokens, Maximum: 50 tokens
-                        </p>
                       </div>
                     )}
 
@@ -329,11 +395,29 @@ export function IndividualEvaluationDashboard({ assignmentId, currentUserId }: I
                     {/* Already Invested */}
                     {isAlreadyInvested(evaluation.evaluatedTeamId) && (
                       <div className="border-t pt-4">
-                        <div className="flex items-center space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span className="text-sm text-green-600">
-                            Already invested {investments.find(inv => inv.investedTeamId === evaluation.evaluatedTeamId)?.tokensInvested} tokens
-                          </span>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-sm text-green-600">
+                              Already invested {investments.find(inv => inv.investedTeamId === evaluation.evaluatedTeamId)?.tokensInvested} tokens
+                            </span>
+                          </div>
+                          {(() => {
+                            const investment = investments.find(inv => inv.investedTeamId === evaluation.evaluatedTeamId)
+                            return investment?.isIncomplete && (
+                              <div className="ml-6 space-y-1">
+                                <div className="flex items-center space-x-2">
+                                  <AlertCircle className="h-4 w-4 text-orange-500" />
+                                  <span className="text-sm text-orange-600 font-medium">Marked as incomplete</span>
+                                </div>
+                                {investment.comments && (
+                                  <div className="ml-6 p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-sm text-orange-700 dark:text-orange-300">
+                                    <strong>Comments:</strong> {investment.comments}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </div>
                       </div>
                     )}

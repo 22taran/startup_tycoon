@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserX } from 'lucide-react';
 
 export default function SignupForm() {
   const [formData, setFormData] = useState({
@@ -18,7 +18,25 @@ export default function SignupForm() {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [signupEnabled, setSignupEnabled] = useState(true);
   const router = useRouter();
+
+  // Check if signup is enabled
+  useEffect(() => {
+    const checkSignupEnabled = async () => {
+      try {
+        const response = await fetch('/api/settings/signup-enabled');
+        const data = await response.json();
+        setSignupEnabled(data.enabled);
+      } catch (error) {
+        console.error('Error checking signup status:', error);
+        // Default to enabled if there's an error
+        setSignupEnabled(true);
+      }
+    };
+
+    checkSignupEnabled();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -65,6 +83,32 @@ export default function SignupForm() {
       setIsLoading(false);
     }
   };
+
+  if (!signupEnabled) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <UserX className="h-5 w-5 mr-2" />
+            Registration Disabled
+          </CardTitle>
+          <CardDescription>
+            New user registration is currently disabled
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <UserX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 mb-2">Registration Temporarily Disabled</p>
+            <p className="text-sm text-gray-400">
+              New user registration is currently disabled by the administrator. 
+              Please contact support if you need access.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto">
