@@ -88,13 +88,20 @@ export function EditTeamModal({
     setLoading(true)
     setError('')
 
+    // Validate that only 1 additional member is allowed
+    const additionalMembers = formData.member2Email
+      .split(',')
+      .map(email => email.trim())
+      .filter(email => email.length > 0 && email !== currentUserEmail)
+    
+    if (additionalMembers.length > 1) {
+      setError('You can only add 1 additional team member. Please enter only one email address.')
+      setLoading(false)
+      return
+    }
+
     try {
       // Always include the current user as the first member
-      const additionalMembers = formData.member2Email
-        .split(',')
-        .map(email => email.trim())
-        .filter(email => email.length > 0 && email !== currentUserEmail)
-      
       const members = [currentUserEmail, ...additionalMembers]
 
       const response = await fetch('/api/teams', {
@@ -178,13 +185,13 @@ export function EditTeamModal({
                 <Input
                   id="member2Email"
                   name="member2Email"
-                  type="email"
+                  type="text"
                   value={formData.member2Email}
                   onChange={handleChange}
-                  placeholder="Enter additional member emails separated by commas"
+                  placeholder="Enter additional member email (optional)"
                 />
                 <p className="text-xs text-gray-500">
-                  Optional: Add up to 1 additional team member (comma-separated)
+                  Optional: Add 1 additional team member
                 </p>
               </div>
             </div>

@@ -154,7 +154,7 @@ export function SubmitWorkModal({
                 type="url"
                 value={formData.primaryLink}
                 onChange={handleChange}
-                placeholder="https://your-primary-link.com"
+                placeholder="https://drive.google.com/file/d/..."
                 required={!existingSubmission}
                 readOnly={!!existingSubmission}
                 className={existingSubmission ? 'bg-gray-50 dark:bg-gray-800' : ''}
@@ -178,7 +178,7 @@ export function SubmitWorkModal({
                 type="url"
                 value={formData.backupLink}
                 onChange={handleChange}
-                placeholder="https://your-backup-link.com"
+                placeholder="https://drive.google.com/file/d/..."
                 readOnly={!!existingSubmission}
                 className={existingSubmission ? 'bg-gray-50 dark:bg-gray-800' : ''}
               />
@@ -194,7 +194,7 @@ export function SubmitWorkModal({
               )}
               {!existingSubmission && (
                 <p className="text-xs text-gray-500">
-                  Optional: Provide a backup link in case the primary link doesn't work
+                  Optional: Upload Google Drive link and ensure it is publicly available
                 </p>
               )}
             </div>
