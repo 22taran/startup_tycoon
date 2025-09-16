@@ -191,7 +191,17 @@ async function checkIndividualSelfEvaluation(
       return false
     }
     
-    return data.teams?.[0]?.members?.includes(studentId) || false
+    // Type assertion to handle Supabase join structure
+    const submission = data as {
+      id: string
+      team_id: string
+      teams: Array<{
+        id: string
+        members: string[]
+      }>
+    }
+    
+    return submission.teams?.[0]?.members?.includes(studentId) || false
   } catch {
     return false
   }
