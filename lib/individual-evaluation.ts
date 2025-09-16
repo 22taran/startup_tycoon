@@ -39,7 +39,7 @@ export const distributeEvaluationsToStudents = async (
     .select(`
       id,
       team_id,
-      teams:team_id(id, name, members)
+      teams!inner(id, name, members)
     `)
     .eq('assignment_id', assignmentId)
     .eq('status', 'submitted')
@@ -52,7 +52,7 @@ export const distributeEvaluationsToStudents = async (
       id: string
       name: string
       members: string[]
-    }[]
+    }
   }>
   
   if (submissionsError) throw submissionsError
@@ -100,10 +100,10 @@ export const distributeEvaluationsToStudents = async (
   for (const student of students) {
     // Get teams that this student is NOT part of
     const studentTeams = typedSubmissions.filter(sub => 
-      sub.teams?.[0]?.members?.includes(student.user_id)
+      sub.teams?.members?.includes(student.user_id)
     )
     const otherTeamSubmissions = typedSubmissions.filter(sub => 
-      !sub.teams?.[0]?.members?.includes(student.user_id)
+      !sub.teams?.members?.includes(student.user_id)
     )
     
     console.log(`🔍 Student ${student.users?.[0]?.email} (${student.user_id}):`)
@@ -111,7 +111,7 @@ export const distributeEvaluationsToStudents = async (
     console.log(`   - Other team submissions: ${otherTeamSubmissions.length}`)
     console.log(`   - Student team IDs: ${studentTeams.map(t => t.team_id).join(', ')}`)
     console.log(`   - Other team IDs: ${otherTeamSubmissions.map(t => t.team_id).join(', ')}`)
-    console.log(`   - All submission team members:`, typedSubmissions.map(s => ({ teamId: s.team_id, members: s.teams?.[0]?.members })))
+    console.log(`   - All submission team members:`, typedSubmissions.map(s => ({ teamId: s.team_id, members: s.teams?.members })))
     
     if (otherTeamSubmissions.length < evaluationsPerStudent) {
       console.warn(`⚠️ Not enough other teams for student ${student.users?.[0]?.email}`)
@@ -124,12 +124,12 @@ export const distributeEvaluationsToStudents = async (
     
     for (const submission of selectedSubmissions) {
       // Double-check: Ensure student is not evaluating their own team
-      const isSelfEvaluation = submission.teams?.[0]?.members?.includes(student.user_id)
+      const isSelfEvaluation = submission.teams?.members?.includes(student.user_id)
       if (isSelfEvaluation) {
         console.error(`❌ CRITICAL BUG: Student ${student.users?.[0]?.email} is being assigned their own team for evaluation!`)
         console.error(`   - Student ID: ${student.user_id}`)
         console.error(`   - Team ID: ${submission.team_id}`)
-        console.error(`   - Team members: ${submission.teams?.[0]?.members}`)
+        console.error(`   - Team members: ${submission.teams?.members}`)
         continue // Skip this assignment
       }
       
@@ -152,7 +152,7 @@ export const distributeEvaluationsToStudents = async (
   const selfEvaluations = evaluationAssignments.filter(evaluation => {
     // Find the submission to check if the evaluator is in the evaluated team
     const submission = typedSubmissions.find(s => s.id === evaluation.submission_id)
-    return submission?.teams?.[0]?.members?.includes(evaluation.evaluator_student_id)
+    return submission?.teams?.members?.includes(evaluation.evaluator_student_id)
   })
   
   if (selfEvaluations.length > 0) {
