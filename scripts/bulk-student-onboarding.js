@@ -336,10 +336,26 @@ async function main() {
     console.log(`${index + 1}. ${course.name} (${course.code}) - ID: ${course.id}`);
   });
   
-  // For this script, we'll use the first course
-  // You can modify this to prompt for course selection
-  const selectedCourse = courses[0];
-  console.log(`\n🎯 Using course: ${selectedCourse.name} (${selectedCourse.id})\n`);
+  // Ask user to select a course
+  const readline = require('readline');
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  const question = (query) => new Promise((resolve) => rl.question(query, resolve));
+
+  const courseChoice = await question('\nSelect course (number): ');
+  const selectedCourse = courses[parseInt(courseChoice) - 1];
+  
+  if (!selectedCourse) {
+    console.log('❌ Invalid course selection');
+    rl.close();
+    return;
+  }
+
+  console.log(`\n🎯 Selected course: ${selectedCourse.name} (${selectedCourse.id})\n`);
+  rl.close();
   
   // Load student data
   console.log('👥 Loading student data...');
@@ -361,6 +377,25 @@ async function main() {
   }
   
   console.log(`📊 Found ${students.length} students to process\n`);
+  
+  // Ask for confirmation before starting
+  const rl2 = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  const question2 = (query) => new Promise((resolve) => rl2.question(query, resolve));
+
+  const confirm = await question2(`\n🚀 Ready to onboard ${students.length} students to "${selectedCourse.name}"?\nType 'yes' to continue or anything else to cancel: `);
+  
+  if (confirm.toLowerCase() !== 'yes') {
+    console.log('❌ Onboarding cancelled by user');
+    rl2.close();
+    return;
+  }
+
+  rl2.close();
+  console.log('\n🔄 Starting onboarding process...\n');
   
   // Process students in batches
   const allResults = {
