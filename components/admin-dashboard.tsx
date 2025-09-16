@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { CourseManagement } from './course-management'
 import { UserManagement } from './user-management'
+import { AdminSettings } from './admin-settings'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -143,96 +144,7 @@ export function AdminDashboard({ currentUserEmail }: AdminDashboardProps) {
         return <UserManagement currentUserEmail={currentUserEmail} />
 
       case 'settings':
-  return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between mb-6">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Platform Settings</h2>
-                <p className="text-gray-600 dark:text-gray-300">Configure platform-wide policies and settings</p>
-            </div>
-          </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    Token Settings
-                  </CardTitle>
-                  <CardDescription>Configure investment tokens and limits</CardDescription>
-            </CardHeader>
-            <CardContent>
-                  <div className="space-y-4">
-                <div className="text-center py-8">
-                      <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-2">Token Configuration</p>
-                      <p className="text-sm text-gray-400">Coming soon - configure token limits and policies</p>
-                    </div>
-                </div>
-            </CardContent>
-          </Card>
-
-
-
-          <Card>
-            <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Trophy className="h-5 w-5 mr-2" />
-                    Grading Rules
-                  </CardTitle>
-                  <CardDescription>Set up grading policies and weightings</CardDescription>
-            </CardHeader>
-            <CardContent>
-                  <div className="space-y-4">
-                <div className="text-center py-8">
-                      <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-2">Grading Configuration</p>
-                      <p className="text-sm text-gray-400">Coming soon - configure grading rules and weightings</p>
-                    </div>
-                </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Settings className="h-5 w-5 mr-2" />
-                    RLS Policies
-                  </CardTitle>
-                  <CardDescription>Manage row-level security and access controls</CardDescription>
-            </CardHeader>
-            <CardContent>
-                  <div className="space-y-4">
-                <div className="text-center py-8">
-                      <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-2">Security Settings</p>
-                      <p className="text-sm text-gray-400">Coming soon - configure RLS policies</p>
-                    </div>
-                </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Clock className="h-5 w-5 mr-2" />
-                    Notifications
-                  </CardTitle>
-                  <CardDescription>Configure platform notifications and alerts</CardDescription>
-            </CardHeader>
-            <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center py-8">
-                      <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-2">Notification Settings</p>
-                      <p className="text-sm text-gray-400">Coming soon - configure notifications and alerts</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-                  </div>
-                </div>
-        )
+        return <AdminSettings />
       
       default:
         return (

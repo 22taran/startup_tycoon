@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn, useSession } from 'next-auth/react'
-import { Eye, EyeOff, AlertCircle, X, Mail, Lock, User } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, X, Mail, Lock, User, UserX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,6 +29,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
   const [showPassword, setShowPassword] = useState(false)
   const [loginStep, setLoginStep] = useState<'idle' | 'authenticating' | 'redirecting'>('idle')
   const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [signupEnabled, setSignupEnabled] = useState(true)
 
   // Sign up form state
   const [signUpData, setSignUpData] = useState({
@@ -43,6 +44,25 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
     email: '',
     password: ''
   })
+
+  // Check if signup is enabled
+  useEffect(() => {
+    const checkSignupEnabled = async () => {
+      try {
+        const response = await fetch('/api/settings/signup-enabled')
+        const data = await response.json()
+        setSignupEnabled(data.enabled)
+      } catch (error) {
+        console.error('Error checking signup status:', error)
+        // Default to enabled if there's an error
+        setSignupEnabled(true)
+      }
+    }
+
+    if (isOpen) {
+      checkSignupEnabled()
+    }
+  }, [isOpen])
 
   // Close modal when user is authenticated
   useEffect(() => {
@@ -246,9 +266,9 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
         {/* Content */}
         <div className="p-6">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'signin' | 'signup')}>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className={`grid w-full ${signupEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              {signupEnabled && <TabsTrigger value="signup">Sign Up</TabsTrigger>}
             </TabsList>
 
             {/* Sign In Tab */}
@@ -345,6 +365,27 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
 
             {/* Sign Up Tab */}
             <TabsContent value="signup" className="space-y-4">
+              {!signupEnabled ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <UserX className="h-5 w-5 mr-2" />
+                      Registration Disabled
+                    </CardTitle>
+                    <CardDescription>New user registration is currently disabled</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8">
+                      <UserX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500 mb-2">Registration Temporarily Disabled</p>
+                      <p className="text-sm text-gray-400">
+                        New user registration is currently disabled by the administrator. 
+                        Please contact support if you need access.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
               <Card>
                 <CardHeader>
                   <CardTitle>Create Account</CardTitle>
@@ -467,6 +508,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: Au
                   </form>
                 </CardContent>
               </Card>
+              )}
             </TabsContent>
           </Tabs>
 
