@@ -539,9 +539,9 @@ export const notificationService = NotificationService.getInstance()
 
 // Helper functions for common notification scenarios
 export async function sendForgotPasswordEmail(email: string, userName: string, resetToken: string) {
-  // Use Vercel URL for production, fallback to NEXTAUTH_URL for development
+  // Use NEXT_PUBLIC_SITE_URL for production, fallback to NEXTAUTH_URL for development
   const baseUrl =
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXTAUTH_URL ||
     'http://localhost:3000';
   const resetLink = `${baseUrl}/reset-password?token=${resetToken}`
@@ -598,7 +598,7 @@ export async function sendAssignmentStartedNotification(
   })
   
   const baseUrl =
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXTAUTH_URL ||
     'http://localhost:3000';
   const assignmentLink = `${baseUrl}/courses/${courseId}/assignments/${assignmentId}`
@@ -669,7 +669,7 @@ export async function sendEvaluationStartedNotification(
     : 'TBD'
   
   const baseUrl =
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXTAUTH_URL ||
     'http://localhost:3000';
   const evaluationLink = `${baseUrl}/courses/${courseId}/evaluations/${assignmentId}`
