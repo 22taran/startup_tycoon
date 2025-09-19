@@ -887,14 +887,24 @@ export function CourseDashboard({ courseId, currentUserEmail, currentUserId }: C
               </span>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => router.push('/courses')}
-            className="flex items-center w-full sm:w-auto"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Courses
-          </Button>
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/help')}
+              className="flex items-center w-full sm:w-auto"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Student Guide
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/courses')}
+              className="flex items-center w-full sm:w-auto"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Courses
+            </Button>
+          </div>
         </div>
       </div>
 

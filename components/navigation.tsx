@@ -125,6 +125,7 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
   // Memoize navigation links
   const navigationLinks = useMemo(() => [
     { name: 'How it Works', href: '/#how-it-works' },
+    { name: 'Student Guide', href: '/help' },
     ...(user ? [
       { name: 'Dashboard', href: '/dashboard' }
     ] : [])
@@ -398,6 +399,14 @@ function NavigationContent({ user: serverUser }: NavigationProps) {
                     >
                       <Settings className="h-4 w-4 mr-2" />
                       Settings
+                    </Link>
+                    <Link
+                      href="/help"
+                      className="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 block px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <UserCircle className="h-4 w-4 mr-2" />
+                      Student Guide
                     </Link>
                   </div>
                   

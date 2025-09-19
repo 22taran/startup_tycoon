@@ -3,7 +3,6 @@ import { auth } from '@/auth'
 import { Hero } from '@/components/hero'
 import { Features } from '@/components/features'
 import { HowItWorks } from '@/components/how-it-works'
-import { StudentGuide } from '@/components/student-guide'
 import { CTA } from '@/components/cta'
 
 export default async function HomePage() {
@@ -24,9 +23,7 @@ export default async function HomePage() {
     <main className="min-h-screen">
       <Hero />
       <Features />
-      <StudentGuide />
       <HowItWorks />
-      
       <CTA />
     </main>
   )
